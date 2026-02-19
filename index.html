@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ganguli.dev</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000;
+        }
+        h1 {
+            color: #00ff00;
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-family: Arial, sans-serif;
+        }
+        img {
+            max-width: 90%;
+            max-height: 50vh;
+            object-fit: contain;
+            margin-bottom: 20px;
+        }
+        .location {
+            color: #00ff00;
+            font-size: 48px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>hey.</h1>
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9LXMIg-A8rCbNZw0ku7Ys6pa1CO4VxrFuKw&s" alt="ganguli.dev">
+    <div class="location" id="location">Loading location...</div>
+    <script>
+        fetch('/location.php')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('location').innerHTML = `${data.city}, ${data.regionName}<br>${data.lat}, ${data.lon}`;
+            })
+            .catch(error => {
+                document.getElementById('location').textContent = 'dammit we couldnt find u';
+            });
+    </script>
+</body>
+</html>
