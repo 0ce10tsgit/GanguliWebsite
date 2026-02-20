@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ganguli.dev</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body {
             margin: 0;
@@ -14,6 +16,15 @@
             align-items: center;
             min-height: 100vh;
             background-color: #000;
+            position: relative;
+        }
+        #map {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
         }
         h1 {
             color: #00ff00;
@@ -21,12 +32,16 @@
             font-weight: bold;
             margin-bottom: 20px;
             font-family: Arial, sans-serif;
+            position: relative;
+            z-index: 1;
         }
         img {
             max-width: 90%;
             max-height: 50vh;
             object-fit: contain;
             margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
         }
         .location {
             color: #00ff00;
@@ -34,6 +49,8 @@
             font-weight: bold;
             font-family: Arial, sans-serif;
             text-align: center;
+            position: relative;
+            z-index: 1;
         }
         .dining-btn {
             margin-top: 32px;
@@ -46,6 +63,8 @@
             border: 3px solid #00ff00;
             padding: 12px 28px;
             transition: background 0.15s, color 0.15s;
+            position: relative;
+            z-index: 1;
         }
         .dining-btn:hover {
             background: #00ff00;
@@ -54,16 +73,38 @@
     </style>
 </head>
 <body>
-    
+    <div id="map"></div>
     <h1>hey.</h1>
     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9LXMIg-A8rCbNZw0ku7Ys6pa1CO4VxrFuKw&s" alt="ganguli.dev">
     <div class="location" id="location">Loading location...</div>
-    <a class="dining-btn" href="home.html">RPI DINING →</a>
+    <a class="dining-btn" href="home.html">RPI DINING(quick view for oyon) →</a>
     <script>
         fetch('/location.php')
             .then(response => response.json())
             .then(data => {
                 document.getElementById('location').innerHTML = `${data.city}, ${data.regionName}<br>${data.lat}, ${data.lon}`;
+
+                const map = L.map('map', {
+                    dragging: false,
+                    zoomControl: false,
+                    scrollWheelZoom: false,
+                    doubleClickZoom: false,
+                    touchZoom: false,
+                    keyboard: false,
+                    boxZoom: false,
+                }).setView([data.lat, data.lon], 12);
+
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+                }).addTo(map);
+
+                L.circleMarker([data.lat, data.lon], {
+                    color: '#00ff00',
+                    fillColor: '#00ff00',
+                    fillOpacity: 0.7,
+                    radius: 10,
+                    weight: 2,
+                }).addTo(map);
             })
             .catch(error => {
                 document.getElementById('location').textContent = 'dammit we couldnt find u';
