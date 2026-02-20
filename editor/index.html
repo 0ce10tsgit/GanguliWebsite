@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pitch editor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+    }
+
+    h1 { font-size: 16px; font-weight: 600; margin: 0 0 20px; }
+
+    /* Entry form */
+    .entry-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+
+    .form-row { display: flex; gap: 10px; align-items: flex-start; }
+
+    select, input[type="text"] {
+      background: #0d1117;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+    select:focus, input[type="text"]:focus { border-color: #58a6ff; }
+
+    select { cursor: pointer; flex-shrink: 0; }
+
+    textarea {
+      width: 100%;
+      background: #0d1117;
+      color: #e6edf3;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      min-height: 80px;
+    }
+    textarea:focus { border-color: #58a6ff; }
+
+    /* Commit-specific fields */
+    #commit-fields { display: none; flex-direction: column; gap: 8px; }
+    #commit-fields.visible { display: flex; }
+
+    .commit-inputs { display: flex; gap: 8px; }
+    .commit-inputs input { flex: 1; }
+
+    button {
+      padding: 6px 16px;
+      border-radius: 6px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #e6edf3;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    button:hover { background: #30363d; }
+    button.primary {
+      background: #238636;
+      border-color: #2ea043;
+      color: #fff;
+    }
+    button.primary:hover { background: #2ea043; }
+    button.danger { border-color: #f85149; color: #f85149; }
+    button.danger:hover { background: #21262d; }
+
+    /* Timeline list */
+    #timeline-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+
+    .entry-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 10px 12px;
+    }
+    .entry-card .type-badge {
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 2em;
+      margin-top: 2px;
+    }
+    .type-badge.comment { background: #1f6feb; color: #fff; }
+    .type-badge.push    { background: #238636; color: #fff; }
+
+    .entry-card .entry-body { flex: 1; font-size: 13px; color: #848d97; line-height: 1.5; }
+    .entry-card .entry-body strong { color: #e6edf3; display: block; margin-bottom: 2px; }
+    .entry-card .entry-body .commit-line { color: #848d97; font-size: 12px; }
+    .entry-card .entry-body .commit-line code {
+      font-family: monospace;
+      background: rgba(110,118,129,0.3);
+      padding: 0 4px;
+      border-radius: 3px;
+    }
+
+    .entry-actions { display: flex; gap: 4px; flex-shrink: 0; }
+
+    /* Output */
+    .output-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .output-bar span { font-size: 12px; color: #848d97; margin-left: auto; }
+    .output-bar span.ok { color: #3fb950; }
+
+    #output {
+      width: 100%;
+      height: 220px;
+      background: #161b22;
+      color: #8b949e;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: "SFMono-Regular", Consolas, monospace;
+      font-size: 12px;
+      resize: vertical;
+      outline: none;
+    }
+    #output:focus { border-color: #58a6ff; }
+
+    .empty { color: #484f58; font-style: italic; text-align: center; padding: 20px; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>pitch editor</h1>
+
+  <!-- Add entry form -->
+  <div class="entry-form">
+    <div class="form-row">
+      <select id="type-select">
+        <option value="comment">comment</option>
+        <option value="push">push</option>
+      </select>
+    </div>
+
+    <!-- Comment fields -->
+    <div id="comment-fields">
+      <select id="comment-meta">
+        <option value="commented">commented</option>
+        <option value="commented · edited">commented · edited</option>
+      </select>
+      <textarea id="comment-text" placeholder="Write paragraphs here. Separate paragraphs with a blank line."></textarea>
+    </div>
+
+    <!-- Commit fields (push) -->
+    <div id="commit-fields">
+      <div id="commits-container"></div>
+      <button id="btn-add-commit">+ add another commit</button>
+    </div>
+
+    <div class="form-row">
+      <button class="primary" id="btn-add-entry">Add to timeline</button>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div id="timeline-list"><p class="empty">No entries yet — add something above.</p></div>
+
+  <!-- Output -->
+  <div class="output-bar">
+    <button id="btn-copy">Copy JSON</button>
+    <span id="copy-status"></span>
+  </div>
+  <textarea id="output" readonly></textarea>
+
+  <script>
+    const timeline = [];
+
+    const typeSelect     = document.getElementById('type-select');
+    const commentFields  = document.getElementById('comment-fields');
+    const commitFields   = document.getElementById('commit-fields');
+    const commitsContainer = document.getElementById('commits-container');
+
+    // Toggle form based on type
+    typeSelect.addEventListener('change', () => {
+      const isPush = typeSelect.value === 'push';
+      commentFields.style.display = isPush ? 'none' : 'flex';
+      commitFields.classList.toggle('visible', isPush);
+      commentFields.style.flexDirection = 'column';
+      if (isPush && commitsContainer.children.length === 0) addCommitRow();
+    });
+
+    function addCommitRow(msg = '', sha = '', url = '') {
+      const row = document.createElement('div');
+      row.className = 'commit-inputs';
+      row.innerHTML = `
+        <input type="text" class="commit-msg" placeholder="Commit message" value="${msg}" style="flex:2">
+        <input type="text" class="commit-sha" placeholder="SHA (e.g. 5f629d7)" value="${sha}" style="flex:1">
+        <input type="text" class="commit-url" placeholder="URL" value="${url}" style="flex:2">
+        <button class="danger" onclick="this.closest('.commit-inputs').remove()">✕</button>`;
+      commitsContainer.appendChild(row);
+    }
+
+    document.getElementById('btn-add-commit').addEventListener('click', () => addCommitRow());
+
+    // Add entry to timeline
+    document.getElementById('btn-add-entry').addEventListener('click', () => {
+      if (typeSelect.value === 'comment') {
+        const raw = document.getElementById('comment-text').value.trim();
+        if (!raw) return;
+        const paragraphs = raw.split(/\n\s*\n/).map(p => p.trim().replace(/\n/g, ' ')).filter(Boolean);
+        timeline.push({
+          type: 'comment',
+          meta: document.getElementById('comment-meta').value,
+          paragraphs
+        });
+        document.getElementById('comment-text').value = '';
+      } else {
+        const rows = commitsContainer.querySelectorAll('.commit-inputs');
+        const commits = [];
+        rows.forEach(row => {
+          const msg = row.querySelector('.commit-msg').value.trim();
+          const sha = row.querySelector('.commit-sha').value.trim();
+          const url = row.querySelector('.commit-url').value.trim();
+          if (msg) commits.push({ message: msg, sha: sha || '?', url: url || '#' });
+        });
+        if (!commits.length) return;
+        timeline.push({ type: 'push', commits });
+        commitsContainer.innerHTML = '';
+        addCommitRow();
+      }
+      renderList();
+      renderOutput();
+    });
+
+    function renderList() {
+      const list = document.getElementById('timeline-list');
+      if (!timeline.length) {
+        list.innerHTML = '<p class="empty">No entries yet — add something above.</p>';
+        return;
+      }
+      list.innerHTML = timeline.map((item, i) => {
+        if (item.type === 'comment') {
+          return `
+            <div class="entry-card">
+              <span class="type-badge comment">comment</span>
+              <div class="entry-body">
+                <strong>${item.meta}</strong>
+                ${item.paragraphs.map(p => `<div>${p}</div>`).join('')}
+              </div>
+              <div class="entry-actions">
+                <button onclick="moveUp(${i})">↑</button>
+                <button onclick="moveDown(${i})">↓</button>
+                <button class="danger" onclick="removeEntry(${i})">✕</button>
+              </div>
+            </div>`;
+        } else {
+          const commitLines = item.commits.map(c =>
+            `<div class="commit-line"><code>${c.sha}</code> ${c.message}</div>`
+          ).join('');
+          return `
+            <div class="entry-card">
+              <span class="type-badge push">push</span>
+              <div class="entry-body">${commitLines}</div>
+              <div class="entry-actions">
+                <button onclick="moveUp(${i})">↑</button>
+                <button onclick="moveDown(${i})">↓</button>
+                <button class="danger" onclick="removeEntry(${i})">✕</button>
+              </div>
+            </div>`;
+        }
+      }).join('');
+    }
+
+    function removeEntry(i) {
+      timeline.splice(i, 1);
+      renderList();
+      renderOutput();
+    }
+
+    function moveUp(i) {
+      if (i === 0) return;
+      [timeline[i - 1], timeline[i]] = [timeline[i], timeline[i - 1]];
+      renderList();
+      renderOutput();
+    }
+
+    function moveDown(i) {
+      if (i === timeline.length - 1) return;
+      [timeline[i], timeline[i + 1]] = [timeline[i + 1], timeline[i]];
+      renderList();
+      renderOutput();
+    }
+
+    function renderOutput() {
+      // Build a minimal timeline-only JSON snippet ready to paste into pitch.json
+      document.getElementById('output').value = JSON.stringify(timeline, null, 2);
+    }
+
+    document.getElementById('btn-copy').addEventListener('click', () => {
+      const out = document.getElementById('output');
+      const status = document.getElementById('copy-status');
+      navigator.clipboard.writeText(out.value)
+        .then(() => { status.textContent = 'copied!'; status.className = 'ok'; })
+        .catch(() => {
+          out.select();
+          document.execCommand('copy');
+          status.textContent = 'copied!'; status.className = 'ok';
+        });
+      setTimeout(() => { status.textContent = ''; status.className = ''; }, 2000);
+    });
+  </script>
+</body>
+</html>

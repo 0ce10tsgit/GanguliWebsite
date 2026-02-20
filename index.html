@@ -77,7 +77,8 @@
     <h1>hey.</h1>
     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9LXMIg-A8rCbNZw0ku7Ys6pa1CO4VxrFuKw&s" alt="ganguli.dev">
     <div class="location" id="location">Loading location...</div>
-    <a class="dining-btn" href="home.html">RPI DINING(quick view for oyon) →</a>
+    <a class="dining-btn" href="home.html">RPI DINING(menu utility for me) →</a>
+    <a class="dining-btn" href="home.html">Elevator Pitch for potential Employers→</a>
     <script>
         fetch('/location.php')
             .then(response => response.json())
@@ -107,7 +108,20 @@
                 }).addTo(map);
             })
             .catch(error => {
-                document.getElementById('location').textContent = 'dammit we couldnt find u';
+            // if there an error than put it at RPI
+                document.getElementById('location').textContent = 'welcome';
+                const map = L.map('map', {
+                    dragging: false,
+                    zoomControl: false,
+                    scrollWheelZoom: false,
+                    doubleClickZoom: false,
+                    touchZoom: false,
+                    keyboard: false,
+                    boxZoom: false,
+                }).setView([42.729, -73.678], 12);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+                }).addTo(map);
             });
     </script>
 </body>

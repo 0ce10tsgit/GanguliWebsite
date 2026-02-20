@@ -1,0 +1,85 @@
+{
+  "pr": {
+    "title": "Why hire me?",
+    "number": 1,
+    "author": "0ce10tsgit",
+    "authorUrl": "https://github.com/0ce10tsgit",
+    "authorAvatar": "https://avatars.githubusercontent.com/u/96030922?s=80&v=4",
+    "subtitle": "wants you to merge his skills into your team"
+  },
+  "sidebar": {
+    "reviewers": "You hopefully",
+    "labels": [
+      { "text": "backend",    "color": "#1f6feb" },
+      { "text": "api",        "color": "#0075ca" },
+      { "text": "full-stack", "color": "#238636" }
+    ],
+    "linkedIssues": "hire me",
+    "projects": "Your next project",
+    "contact": { "text": "github.com/0ce10tsgit", "url": "https://github.com/0ce10tsgit" }
+  },
+  "timeline": [
+    {
+      "type": "comment",
+      "meta": "commented",
+      "paragraphs": [
+        "I can build and ship real backend APIs end-to-end.",
+        "For <strong>RideLink</strong> (a ride-sharing app) I implemented POST and GET endpoints for rides using <strong>FastAPI</strong> with full Pydantic model validation. I set up the database connection via environment variables so switching between Supabase and a Neon testing instance was just one line in the <code>.env</code> file. Tested all endpoints, confirmed both compile and runtime correctness, and cleaned up leftover scaffolding code along the way.",
+        "I don't just write code that runs — I write code that's easy to hand off."
+      ]
+    },
+    {
+      "type": "push",
+      "commits": [
+        {
+          "message": "Post and get/ Pydantic Models/ ENV db stuff",
+          "sha": "5f629d7",
+          "url": "https://github.com/bhoomipatni/RideLink/pull/4/commits/5f629d72b1a943347397e7c194c223d03a1cbb47"
+        },
+        {
+          "message": "Thread safety improvements",
+          "sha": "16fe2f3",
+          "url": "https://github.com/bhoomipatni/RideLink/pull/4/commits/16fe2f3"
+        }
+      ]
+    },
+    {
+      "type": "comment",
+      "meta": "commented · edited",
+      "paragraphs": [
+        "I debug systematically and don't give up when the obvious path breaks.",
+        "Supabase was giving me trouble during testing, so instead of blocking the team I spun up a temporary Postgres instance on <strong>Neon</strong>, tested all the endpoints there, and confirmed everything worked. Switching back is a one-line change in <code>.env</code> — I built it that way on purpose.",
+        "double checked and tested and it now compiles and works fine ✓"
+      ]
+    },
+    {
+      "type": "push",
+      "commits": [
+        {
+          "message": "ENV error handler + Neon DB validation",
+          "sha": "View PR",
+          "url": "https://github.com/bhoomipatni/RideLink/pull/4"
+        }
+      ]
+    },
+    {
+      "type": "comment",
+      "meta": "commented",
+      "paragraphs": [
+        "I build things for fun, not just for class.",
+        "This website (<strong>ganguli.dev</strong>) is a personal project — a live portfolio that shows your real IP-based location on a dark Carto map using the Leaflet.js API and a custom PHP backend. I built the map view, the dining menu utility for RPI, and now this pitch page. I'm comfortable across the stack: HTML/CSS/JS on the front, PHP/Python on the back, Postgres in the middle.",
+        "Check the repo: <a href=\"https://github.com/0ce10tsgit/GanguliWebsite\" target=\"_blank\">github.com/0ce10tsgit/GanguliWebsite</a>"
+      ]
+    },
+    {
+      "type": "push",
+      "commits": [
+        {
+          "message": "Added the map view",
+          "sha": "461075c",
+          "url": "https://github.com/0ce10tsgit/GanguliWebsite/commit/461075c"
+        }
+      ]
+    }
+  ]
+}

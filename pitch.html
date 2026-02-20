@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en" data-color-mode="dark" data-dark-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Why Hire Me? · Pull Request · 0ce10tsgit</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      background-color: #0d1117;
+      color: #e6edf3;
+    }
+
+    a { color: #58a6ff; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 85%;
+      background: rgba(110,118,129,0.4);
+      border-radius: 6px;
+      padding: 0.2em 0.4em;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    /* PR Header */
+    .pr-header { margin-bottom: 16px; }
+    .pr-title {
+      font-size: 26px;
+      font-weight: 400;
+      line-height: 1.2;
+      color: #e6edf3;
+      margin: 0 0 8px 0;
+    }
+    .pr-title .pr-number { color: #848d97; font-weight: 400; }
+
+    .pr-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 14px;
+      color: #848d97;
+    }
+
+    .state-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 2em;
+      font-size: 14px;
+      font-weight: 500;
+      background-color: #238636;
+      color: #ffffff;
+    }
+    .state-badge svg { fill: currentColor; }
+
+    /* Tab nav */
+    .tab-nav {
+      display: flex;
+      border-bottom: 1px solid #30363d;
+      margin-bottom: 24px;
+    }
+    .tab-nav a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      font-size: 14px;
+      color: #e6edf3;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      text-decoration: none;
+    }
+    .tab-nav a.active {
+      border-bottom-color: #f78166;
+      font-weight: 600;
+    }
+    .tab-nav a svg { fill: #848d97; }
+    .tab-nav .counter {
+      display: inline-flex;
+      align-items: center;
+      padding: 0 6px;
+      font-size: 12px;
+      font-weight: 500;
+      background: rgba(110,118,129,0.4);
+      border-radius: 20px;
+      min-width: 20px;
+      justify-content: center;
+    }
+
+    /* Layout */
+    .pr-layout {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+    .pr-main { flex: 1; min-width: 0; }
+    .pr-sidebar {
+      width: 220px;
+      flex-shrink: 0;
+      font-size: 12px;
+      color: #848d97;
+    }
+    .pr-sidebar .sidebar-section {
+      padding: 16px 0;
+      border-bottom: 1px solid #21262d;
+    }
+    .pr-sidebar .sidebar-section:first-child { padding-top: 0; }
+    .pr-sidebar .sidebar-heading {
+      font-size: 12px;
+      font-weight: 600;
+      color: #e6edf3;
+      margin-bottom: 8px;
+    }
+
+    /* Timeline */
+    .timeline { position: relative; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #21262d;
+      z-index: 0;
+    }
+
+    /* Comment */
+    .timeline-comment-wrapper {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .timeline-avatar {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      overflow: hidden;
+      z-index: 1;
+      position: relative;
+    }
+    .timeline-avatar img { width: 100%; height: 100%; display: block; }
+
+    .comment-box {
+      flex: 1;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      overflow: hidden;
+      background: #0d1117;
+    }
+    .comment-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      font-size: 14px;
+    }
+    .comment-header-left { display: flex; align-items: center; gap: 6px; }
+    .comment-author { font-weight: 600; color: #e6edf3; }
+    .comment-meta { color: #848d97; }
+    .comment-label {
+      font-size: 12px;
+      padding: 2px 7px;
+      border: 1px solid #388bfd;
+      border-radius: 2em;
+      color: #388bfd;
+    }
+    .comment-body { padding: 16px; line-height: 1.6; }
+    .comment-body p { margin: 0 0 12px 0; }
+    .comment-body p:last-child { margin-bottom: 0; }
+
+    /* Push event */
+    .timeline-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+      position: relative;
+    }
+    .timeline-badge {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    .timeline-badge-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #161b22;
+      border: 2px solid #30363d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .timeline-badge-icon svg { fill: #848d97; }
+    .timeline-item-body {
+      flex: 1;
+      padding-top: 8px;
+      font-size: 14px;
+      color: #848d97;
+    }
+    .timeline-item-body .author-link { color: #e6edf3; font-weight: 600; }
+    .timeline-item-body .time-link { font-size: 12px; }
+
+    /* Commits */
+    .commit-group {
+      margin-left: 52px;
+      margin-bottom: 16px;
+    }
+    .commit-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border: 1px solid #21262d;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      background: #0d1117;
+    }
+    .commit-row:hover { background: #161b22; }
+    .commit-avatar { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; }
+    .commit-message { flex: 1; font-family: "SFMono-Regular", Consolas, monospace; font-size: 13px; }
+    .commit-message a { color: #e6edf3; }
+    .commit-sha code { font-size: 12px; }
+    .commit-sha code a { color: #848d97; }
+
+    /* Divider between push groups */
+    .timeline-divider {
+      height: 1px;
+      background: #21262d;
+      margin: 16px 0 16px 52px;
+    }
+
+    .sidebar-none { color: #848d97; font-style: italic; }
+
+    @media (max-width: 768px) {
+      .pr-layout { flex-direction: column; }
+      .pr-sidebar { width: 100%; }
+      .tab-nav a .tab-label { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div id="pr-header" class="pr-header"></div>
+
+  <nav class="tab-nav">
+    <a href="#" class="active">
+      <svg height="16" viewBox="0 0 16 16" width="16"><path d="M1.75 1h8.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 10.25 10H7.061l-2.574 2.573A1.458 1.458 0 0 1 2 11.543V10h-.25A1.75 1.75 0 0 1 0 8.25v-5.5C0 1.784.784 1 1.75 1ZM1.5 2.75v5.5c0 .138.112.25.25.25h1a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h3.5a.25.25 0 0 0 .25-.25v-5.5a.25.25 0 0 0-.25-.25h-8.5a.25.25 0 0 0-.25.25Zm13 2a.25.25 0 0 0-.25-.25h-.5a.75.75 0 0 1 0-1.5h.5c.966 0 1.75.784 1.75 1.75v5.5A1.75 1.75 0 0 1 14.25 12H14v1.543a1.458 1.458 0 0 1-2.487 1.03L9.22 12.28a.749.749 0 0 1 .326-1.275.749.749 0 0 1 .734.215l2.22 2.22v-2.19a.75.75 0 0 1 .75-.75h1a.25.25 0 0 0 .25-.25Z"></path></svg>
+      <span class="tab-label">Conversation</span>
+    </a>
+    <a href="#">
+      <svg height="16" viewBox="0 0 16 16" width="16"><path d="M11.93 8.5a4.002 4.002 0 0 1-7.86 0H.75a.75.75 0 0 1 0-1.5h3.32a4.002 4.002 0 0 1 7.86 0h3.32a.75.75 0 0 1 0 1.5Zm-1.43-.75a2.5 2.5 0 1 0-5 0 2.5 2.5 0 0 0 5 0Z"></path></svg>
+      <span class="tab-label">Commits</span>
+      <span class="counter" id="commit-count">0</span>
+    </a>
+    <a href="#">
+      <svg height="16" viewBox="0 0 16 16" width="16"><path d="M1 1.75C1 .784 1.784 0 2.75 0h7.586c.464 0 .909.184 1.237.513l2.914 2.914c.329.328.513.773.513 1.237v9.586A1.75 1.75 0 0 1 13.25 16H2.75A1.75 1.75 0 0 1 1 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25V4.664a.25.25 0 0 0-.073-.177l-2.914-2.914a.25.25 0 0 0-.177-.073ZM8 3.25a.75.75 0 0 1 .75.75v1.5h1.5a.75.75 0 0 1 0 1.5h-1.5v1.5a.75.75 0 0 1-1.5 0V7h-1.5a.75.75 0 0 1 0-1.5h1.5V4A.75.75 0 0 1 8 3.25Zm-3 8a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Z"></path></svg>
+      <span class="tab-label">Files changed</span>
+      <span class="counter">∞</span>
+    </a>
+  </nav>
+
+  <div class="pr-layout">
+    <div class="pr-main">
+      <div class="timeline" id="timeline"></div>
+    </div>
+    <div class="pr-sidebar" id="sidebar"></div>
+  </div>
+</div>
+
+<script>
+  const PUSH_SVG = `<svg height="16" viewBox="0 0 16 16" width="16"><path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0V1.5h-8a1 1 0 0 0-1 1v6.708A2.493 2.493 0 0 1 4.5 9h2.25a.75.75 0 0 1 0 1.5H4.5a1 1 0 0 0 0 2h4.75a.75.75 0 0 1 0 1.5H4.5A2.5 2.5 0 0 1 2 11.5Zm12.23 7.79h-.001l-1.224-1.224v6.184a.75.75 0 0 1-1.5 0V9.066L10.28 10.29a.75.75 0 0 1-1.06-1.061l2.505-2.504a.75.75 0 0 1 1.06 0L15.29 9.23a.751.751 0 0 1-.018 1.042.751.751 0 0 1-1.042.018Z"></path></svg>`;
+
+  const TODAY = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  function renderComment(item, pr) {
+    return `
+      <div class="timeline-comment-wrapper">
+        <div class="timeline-avatar">
+          <img src="${pr.authorAvatar}" alt="@${pr.author}" />
+        </div>
+        <div class="comment-box">
+          <div class="comment-header">
+            <div class="comment-header-left">
+              <a href="${pr.authorUrl}" target="_blank" class="comment-author">${pr.author}</a>
+              <span class="comment-meta">${item.meta}</span>
+            </div>
+            <span class="comment-label">Author</span>
+          </div>
+          <div class="comment-body">
+            ${item.paragraphs.map(p => `<p>${p}</p>`).join('')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function renderPush(item, pr) {
+    const count = item.commits.length;
+    const commitRows = item.commits.map(c => `
+      <div class="commit-row">
+        <img class="commit-avatar" src="${pr.authorAvatar.replace('s=80', 's=40')}" alt="@${pr.author}" />
+        <span class="commit-message"><a href="${c.url}" target="_blank">${c.message}</a></span>
+        <span class="commit-sha"><code><a href="${c.url}" target="_blank">${c.sha}</a></code></span>
+      </div>`).join('');
+
+    return `
+      <div class="timeline-item">
+        <div class="timeline-badge">
+          <div class="timeline-badge-icon">${PUSH_SVG}</div>
+        </div>
+        <div class="timeline-item-body">
+          <a href="${pr.authorUrl}" target="_blank" class="author-link">${pr.author}</a>
+          added ${count} commit${count !== 1 ? 's' : ''}
+          <span class="time-link">· ${TODAY}</span>
+        </div>
+      </div>
+      <div class="commit-group">${commitRows}</div>`;
+  }
+
+  function renderSidebar(sidebar) {
+    const labels = sidebar.labels.map(l =>
+      `<span style="display:inline-block;padding:2px 8px;border-radius:2em;font-size:12px;background:${l.color};color:#fff;margin-bottom:4px;">${l.text}</span>`
+    ).join(' ');
+
+    return `
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Reviewers</div>
+        <span class="sidebar-none">${sidebar.reviewers}</span>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Labels</div>
+        ${labels}
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Linked Issues</div>
+        <span class="sidebar-none">${sidebar.linkedIssues}</span>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Projects</div>
+        <span class="sidebar-none">${sidebar.projects}</span>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-heading">Contact</div>
+        <a href="${sidebar.contact.url}" target="_blank">${sidebar.contact.text}</a>
+      </div>`;
+  }
+
+  fetch('pitch.json')
+    .then(r => r.json())
+    .then(data => {
+      const { pr, sidebar, timeline } = data;
+
+      // Header
+      document.title = `${pr.title} · Pull Request #${pr.number} · ${pr.author}`;
+      document.getElementById('pr-header').innerHTML = `
+        <h1 class="pr-title">${pr.title} <span class="pr-number">#${pr.number}</span></h1>
+        <div class="pr-meta">
+          <span class="state-badge">
+            <svg height="16" viewBox="0 0 16 16" width="16"><path d="M1.5 3.25a2.25 2.25 0 1 1 3 2.122v5.256a2.251 2.251 0 1 1-1.5 0V5.372A2.25 2.25 0 0 1 1.5 3.25Zm5.677-.177L9.573.677A.25.25 0 0 1 10 .854V2.5h1A2.5 2.5 0 0 1 13.5 5v5.628a2.251 2.251 0 1 1-1.5 0V5a1 1 0 0 0-1-1h-1v1.646a.25.25 0 0 1-.427.177L7.177 3.427a.25.25 0 0 1 0-.354ZM3.75 2.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm0 9.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5Zm8.25.75a.75.75 0 1 0 1.5 0 .75.75 0 0 0-1.5 0Z"></path></svg>
+            Open
+          </span>
+          <span><a href="${pr.authorUrl}" target="_blank"><strong>${pr.author}</strong></a> ${pr.subtitle}</span>
+        </div>`;
+
+      // Timeline — insert divider between every push and the next comment
+      let html = '';
+      let commitCount = 0;
+      timeline.forEach((item, i) => {
+        if (item.type === 'comment') {
+          // Add divider before comment if previous item was a push
+          if (i > 0 && timeline[i - 1].type === 'push') {
+            html += `<div class="timeline-divider"></div>`;
+          }
+          html += renderComment(item, pr);
+        } else if (item.type === 'push') {
+          html += renderPush(item, pr);
+          commitCount += item.commits.length;
+        }
+      });
+
+      document.getElementById('timeline').innerHTML = html;
+      document.getElementById('commit-count').textContent = commitCount;
+
+      // Sidebar
+      document.getElementById('sidebar').innerHTML = renderSidebar(sidebar);
+    });
+</script>
+</body>
+</html>
