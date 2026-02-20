@@ -35,12 +35,30 @@
             font-family: Arial, sans-serif;
             text-align: center;
         }
+        .dining-btn {
+            margin-top: 32px;
+            display: inline-block;
+            color: #00ff00;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            text-decoration: none;
+            border: 3px solid #00ff00;
+            padding: 12px 28px;
+            transition: background 0.15s, color 0.15s;
+        }
+        .dining-btn:hover {
+            background: #00ff00;
+            color: #000;
+        }
     </style>
 </head>
 <body>
+    
     <h1>hey.</h1>
     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9LXMIg-A8rCbNZw0ku7Ys6pa1CO4VxrFuKw&s" alt="ganguli.dev">
     <div class="location" id="location">Loading location...</div>
+    <a class="dining-btn" href="home.html">RPI DINING →</a>
     <script>
         fetch('/location.php')
             .then(response => response.json())
