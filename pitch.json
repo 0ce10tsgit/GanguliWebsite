@@ -51,8 +51,29 @@
     "meta": "commented",
     "paragraphs": [
       "<strong>Data Skills </strong>",
-      "I have experience with PostgreSQL and MariaDB, both designing schemas as writing statements for backend systems for multiple projects .over a range complexity  In other Data skills I took a Biology Computational Lab where I used R on Datasets to prove/disprove a hypothesis"
+      "I have experience with PostgreSQL and MariaDB, both designing schemas as well as writing a lot of SQL whiich I learned from my ITWS1100 class and through personal projects",
+       "In other Data skills I took a Biology Computational Lab where I used R on Datasets to prove/disprove a hypothesis"
+    ]
+  },
+  {
+    "type": "comment",
+    "meta": "commented",
+    "paragraphs": [
+      "<strong> Backend Skills</strong>",
+      " I have experience building backend systems with FASTAPI, PHP and Node.JS,", 
+      "Specfically Ive made two REST API's for both a open contribution cookbook app and a ride sharing website."
+    ]
+  },
+  {
+    "type": "push",
+    "commits": [
+      {
+        "message": "The ride sharing website",
+        "sha": "anotherRepo",
+        "url": "https://github.com/bhoomipatni/RideLink"
+      }
     ]
   }
+  
 ]
 }
