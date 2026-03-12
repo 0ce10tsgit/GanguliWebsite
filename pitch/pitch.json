@@ -32,7 +32,7 @@
     "meta": "commented",
     "paragraphs": [
       "<strong>Cloud Deployment Skills</strong>",
-      "To begin with this site is one of  many applications ive developed , deployed and maintained myself.  I learned cloud deployment both through this site with Digital ocean and through my ITWS1100 class with Azure cloud deployment for a term project"
+      "To begin with, this site is one of many applications I've developed, deployed and maintained myself. I learned cloud deployment both through this site with Digital Ocean and through my ITWS1100 class with Azure cloud deployment for a term project. I also converted my home PC to a dual boot web server that hosts AI models that I'm training and can access through my network"
     ]
   },
   {
@@ -51,8 +51,9 @@
     "meta": "commented",
     "paragraphs": [
       "<strong>Data Skills </strong>",
-      "I have experience with PostgreSQL and MariaDB, both designing schemas as well as writing a lot of SQL whiich I learned from my ITWS1100 class and through personal projects",
-       "In other Data skills I took a Biology Computational Lab where I used R on Datasets to prove/disprove a hypothesis"
+      "I have experience with PostgreSQL and MariaDB, both designing schemas as well as writing a lot of SQL which I learned from my ITWS1100 class and through personal projects",
+       "In other Data skills I took a Biology Computational Lab where I used R on Datasets to prove/disprove a hypothesis",
+       "I've also trained AI models using Hugging Face and Python with Google Colab to create a chatbot that talks like me based on my texts"
     ]
   },
   {
@@ -61,7 +62,7 @@
     "paragraphs": [
       "<strong> Backend Skills</strong>",
       " I have experience building backend systems with FASTAPI, PHP and Node.JS,", 
-      "Specfically Ive made two REST API's for both a open contribution cookbook app and a ride sharing website."
+      "Specifically I've made two REST APIs for both an open contribution cookbook app and a ride sharing website."
     ]
   },
   {
@@ -73,7 +74,51 @@
         "url": "https://github.com/bhoomipatni/RideLink"
       }
     ]
+  },
+  {
+    "type": "comment",
+    "meta": "commented",
+    "paragraphs": [
+      "<strong>Other Language Knowledge</strong>",
+      "I've got experience in a number of languages",
+      "For starters I took and passed Data Structures and Algorithms in C/C++, 10 hr/week homeworks demanded optimized, quality code",
+      "I have college credit in Java through AP Computer Science A as well as experience with it in FTC robotics",
+      "I'm deeply experienced in Python and Javascript/Typescript in a number of scenarios including backend, automation and AI training",
+      "I also have an unhealthy obsession with Google Apps Script, it's fantastic for automation everyone should learn it"
+    ]
+  },
+   {
+    "type": "push",
+    "commits": [
+      {
+        "message": "A nifty NPM package style script I wrote when learning Node",
+        "sha": "decimalsRwierd",
+        "url": "https://github.com/0ce10tsgit/floatmath"
+      }
+    ]
+  },
+  {
+    "type": "comment",
+    "meta": "commented",
+    "paragraphs": [
+      "<strong> Use of AI in development</strong>",
+      "I believe that AI is a powerful and useful tool when used in the correct scenarios and ways",
+      "I follow the basic principle of 'if you can't explain how it works then don't use it' except that doesn't happen often because I do iterative, conversational development",
+      "With skills you have knowledge of, it is deeply helpful in increasing productivity as well as being good for debugging. When in unknown territory it is a fantastic learning tool. If you don't understand what it did, talk to it until you do",
+      "I'm proud to have retained knowledge of how to do things without AI as well as practicing those skills often (academics), but I have experience with workflows in Claude Code that I find have me shipping faster",
+      "This website is actually one of the places I use Claude Code in development to help me learn better frontend" 
+    ]
+  },
+  {
+    "type": "comment",
+    "meta": "commented",
+    "paragraphs": [
+      "<strong>Conclusion</strong>",
+      "I hope this PR has convinced you to hire me, I have done a lot and intend to do a lot more and I definitly covered not all of it here, if I am an applicant you have my contact info and asking about my skills in context of what you need is something I am very open to and would love to talk about",
+      "Thanks for reading"
+    ]
   }
+  
   
 ]
 }
