@@ -75,11 +75,12 @@
       }
     ]
   },
+  
   {
     "type": "comment",
     "meta": "commented",
     "paragraphs": [
-      "<strong>Other Language Knowledge</strong>",
+      "<strong>Languages I know overview</strong>",
       "I've got experience in a number of languages",
       "For starters I took and passed Data Structures and Algorithms in C/C++, 10 hr/week homeworks demanded optimized, quality code",
       "I have college credit in Java through AP Computer Science A as well as experience with it in FTC robotics",
@@ -87,13 +88,45 @@
       "I also have an unhealthy obsession with Google Apps Script, it's fantastic for automation everyone should learn it"
     ]
   },
-   {
+  {
     "type": "push",
     "commits": [
       {
         "message": "A nifty NPM package style script I wrote when learning Node",
         "sha": "decimalsRwierd",
         "url": "https://github.com/0ce10tsgit/floatmath"
+      }
+    ]
+  },
+  {
+    "type": "comment",
+    "meta": "commented",
+    "paragraphs": [
+      "<strong>Python</strong>",
+      "One of my side projects is creating an LLM that talks like me which I am doing ussign hugging face and python, It trains of my texts which is converted into training data by another python script I wrote to extract and organize into conversations in a set format ",
+      "Anthor past project was writing a compilier which I consider near turing complete because I was able to make compile and run a BrainF*Ck(an odd programming language look it up)  compilier in it ",
+      "Ive also used it in Webdev developing a FASTAPI restAPI for a carpooling app ",
+      "A number of discord bots Ive made also use discord.py wher I built a relay from google sheets so it could be related into a discord server using discord.py"
+    ]
+  },
+  {
+    "type": "push",
+    "commits": [
+      {
+        "message": "FastAPI Carpooling app",
+        "sha": "VroomVrooom",
+        "url": "https://github.com/bhoomipatni/RideLink"
+      }
+    ]
+  },
+  {
+    "type": "push",
+    "commits": [
+      {
+        "message": "The compilier",
+        "sha": "tsOLD",
+        "url": "https://github.com/0ce10tsgit/wierd_lang"
+
       }
     ]
   },
