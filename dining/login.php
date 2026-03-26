@@ -80,7 +80,7 @@
       <br><br>
       <button type="submit">Enter</button>
     </form>
-    <a href="/">← Back</a>
+    <a href="/">Back</a>
   </div>
 </body>
 </html>
