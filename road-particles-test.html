@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Road Particle Effect — Test</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; font-family: Arial, sans-serif; }
+        #container { width: 100vw; height: 100vh; }
+        #ui {
+            position: fixed; top: 14px; left: 14px; z-index: 10;
+            color: #ccc; font-size: 12px; display: flex; flex-direction: column; gap: 6px;
+        }
+        #ui .row { display: flex; gap: 5px; align-items: center; }
+        #ui label { color: #888; min-width: 40px; }
+        #ui input[type=number] {
+            background: #111; border: 1px solid #333; color: #ddd;
+            padding: 3px 6px; width: 88px; font-size: 12px; border-radius: 2px;
+        }
+        #ui input[type=range] { width: 70px; accent-color: #e64f4f; }
+        #ui button {
+            background: #e64f4f; border: none; color: #fff;
+            padding: 4px 12px; cursor: pointer; font-size: 12px; border-radius: 2px;
+        }
+        #ui button:hover { background: #ff6666; }
+        #status { color: #555; font-size: 11px; max-width: 280px; line-height: 1.4; }
+        #debug-wrap { margin-top: 4px; border: 1px solid #222; display: none; }
+        #debug-wrap span { color: #444; font-size: 10px; display: block; padding: 2px 4px; }
+        #debug-canvas { display: block; }
+    </style>
+</head>
+<body>
+<div id="container"></div>
+<div id="ui">
+    <div class="row">
+        <label>Lat</label><input id="lat-in" type="number" step="0.001" value="40.758">
+        <label>Lng</label><input id="lng-in" type="number" step="0.001" value="-73.985">
+        <button onclick="restart()">Go</button>
+    </div>
+    <div class="row">
+        <label>Zoom</label>
+        <input id="zoom-in" type="range" min="13" max="16" step="1" value="15">
+        <span id="zoom-val">15</span>
+    </div>
+    <div class="row">
+        <label style="color:#555">Debug</label>
+        <input type="checkbox" id="debug-toggle">
+        <span style="color:#444;font-size:10px">road mask</span>
+    </div>
+    <div id="status">Initializing…</div>
+    <div id="debug-wrap">
+        <span>red = road mask (grey br 16–42, dilated 2px)</span>
+        <canvas id="debug-canvas" width="192" height="192"></canvas>
+    </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────────────────────────────────
+const TILE_SIZE      = 256;
+const TILE_GRID      = 3;
+const CANVAS_PX      = TILE_GRID * TILE_SIZE;        // 768
+const SCENE_SCALE    = 0.052;
+const GROUND_SIZE    = CANVAS_PX * SCENE_SCALE;      // ≈ 40 units
+const ACCENT         = 0xe64f4f;
+
+const PARTICLE_COUNT  = 50;
+const TRAIL_LEN       = 28;
+const STEPS_PER_FRAME = 1;    // canvas pixels advanced per step
+const STEP_INTERVAL   = 4;    // only step particles every N frames (slows them down)
+const SPAWN_RADIUS    = 120;  // canvas px from center to sample spawn pool from
+const LIFETIME_MIN    = 300;  // frames before forced respawn (~5s)
+const LIFETIME_MAX    = 600;  // frames before forced respawn (~10s)
+const LOOP_MEMORY     = 60;   // how many recent pixels to remember per particle
+
+// Road pixel: #191919 = RGB(25,25,25) — confirmed from tile scan
+const ROAD_R = 25, ROAD_G = 25, ROAD_B = 25;
+
+const DX8 = [-1, 0, 1, -1, 1, -1, 0, 1];
+const DY8 = [-1,-1,-1,  0, 0,  1, 1, 1];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// UI
+// ─────────────────────────────────────────────────────────────────────────────
+const $status  = document.getElementById('status');
+const $zoom    = document.getElementById('zoom-in');
+const $zoomVal = document.getElementById('zoom-val');
+const $dbgTog  = document.getElementById('debug-toggle');
+const $dbgWrap = document.getElementById('debug-wrap');
+const $dbgCvs  = document.getElementById('debug-canvas');
+$zoom.oninput      = () => $zoomVal.textContent = $zoom.value;
+$dbgTog.onchange   = () => { $dbgWrap.style.display = $dbgTog.checked ? 'block' : 'none'; };
+function status(msg) { $status.textContent = msg; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// THREE.JS SCENE
+// ─────────────────────────────────────────────────────────────────────────────
+const container = document.getElementById('container');
+const scene     = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+scene.fog = new THREE.FogExp2(0x000000, 0.018);
+
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
+camera.position.set(22, 18, 22);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+container.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.05;
+controls.autoRotate = true; controls.autoRotateSpeed = 0.35;
+controls.enableZoom = true; controls.enablePan = false;
+controls.maxPolarAngle = Math.PI / 2.05; controls.minPolarAngle = 0.1;
+
+// Ground planes
+const bgPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(400, 400),
+    new THREE.MeshBasicMaterial({ color: 0x060608 })
+);
+bgPlane.rotation.x = -Math.PI / 2; bgPlane.position.y = -0.05; scene.add(bgPlane);
+
+const mapMat   = new THREE.MeshBasicMaterial({ color: 0x080810 });
+const mapPlane = new THREE.Mesh(new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE), mapMat);
+mapPlane.rotation.x = -Math.PI / 2; mapPlane.position.y = -0.01; scene.add(mapPlane);
+
+// Marker ring
+const ringMat   = new THREE.MeshBasicMaterial({ color: ACCENT, side: THREE.DoubleSide, transparent: true, opacity: 0.9 });
+const ring      = new THREE.Mesh(new THREE.RingGeometry(1.1, 1.3, 64), ringMat);
+ring.rotation.x = -Math.PI / 2; ring.position.y = 0.05; scene.add(ring);
+
+const pulseMat  = new THREE.MeshBasicMaterial({ color: ACCENT, side: THREE.DoubleSide, transparent: true, opacity: 0.22 });
+const pulseRing = new THREE.Mesh(new THREE.RingGeometry(1.8, 1.95, 64), pulseMat);
+pulseRing.rotation.x = -Math.PI / 2; pulseRing.position.y = 0.03; scene.add(pulseRing);
+
+const trailGroup = new THREE.Group(); scene.add(trailGroup);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TILE FETCHING
+// ─────────────────────────────────────────────────────────────────────────────
+function latLngToTile(lat, lng, zoom) {
+    const n = Math.pow(2, zoom), latRad = lat * Math.PI / 180;
+    return {
+        x: Math.floor((lng + 180) / 360 * n),
+        y: Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n),
+    };
+}
+
+async function fetchTiles(lat, lng, zoom) {
+    const center = latLngToTile(lat, lng, zoom);
+    const half   = Math.floor(TILE_GRID / 2);
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = CANVAS_PX;
+    const ctx = canvas.getContext('2d');
+
+    const load = (tx, ty) => new Promise((res, rej) => {
+        const img = new Image(); img.crossOrigin = 'anonymous';
+        img.onload = () => res({ img, tx, ty }); img.onerror = rej;
+        img.src = `https://${'abcd'[Math.floor(Math.random()*4)]}.basemaps.cartocdn.com/dark_nolabels/${zoom}/${tx}/${ty}.png`;
+    });
+
+    const tiles = [];
+    for (let dy = -half; dy <= half; dy++)
+        for (let dx = -half; dx <= half; dx++)
+            tiles.push(load(center.x+dx, center.y+dy));
+
+    const results = await Promise.all(tiles);
+    for (const { img, tx, ty } of results)
+        ctx.drawImage(img, (tx-center.x+half)*TILE_SIZE, (ty-center.y+half)*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+
+    return { ctx, canvas };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PIXEL ROAD CHECK — every single movement step calls this
+// ─────────────────────────────────────────────────────────────────────────────
+let pixelData  = null;        // raw Uint8ClampedArray from getImageData
+let roadMask   = null;        // Uint8Array: 1 = road (dilated), 0 = not road
+let nearCenterPixels = [];    // road pixels within SPAWN_RADIUS of canvas center
+
+function isRoad(px, py) {
+    if (px < 0 || py < 0 || px >= CANVAS_PX || py >= CANVAS_PX) return false;
+    return roadMask[py * CANVAS_PX + px] === 1;
+}
+
+// Build road mask: match all uniform-grey pixels in the road brightness band,
+// then dilate 2px to close intersection and casing gaps.
+// Road band: brightness 16–42, R≈G≈B (spread ≤ 10).
+// Background is ~10 brightness — safely excluded.
+function buildRoadMask() {
+    const size = CANVAS_PX * CANVAS_PX;
+    const base = new Uint8Array(size);
+    for (let i = 0; i < size; i++) {
+        const p = i * 4;
+        const r = pixelData[p], g = pixelData[p+1], b = pixelData[p+2];
+        const br = (r + g + b) / 3;
+        const spread = Math.max(r, g, b) - Math.min(r, g, b);
+        if (br >= 16 && br <= 42 && spread <= 10) base[i] = 1;
+    }
+    // Two rounds of dilation to close gaps
+    roadMask = new Uint8Array(size);
+    const tmp  = new Uint8Array(size);
+    for (let py = 0; py < CANVAS_PX; py++) {
+        for (let px = 0; px < CANVAS_PX; px++) {
+            if (!base[py * CANVAS_PX + px]) continue;
+            tmp[py * CANVAS_PX + px] = 1;
+            for (let d = 0; d < 8; d++) {
+                const nx = px + DX8[d], ny = py + DY8[d];
+                if (nx >= 0 && ny >= 0 && nx < CANVAS_PX && ny < CANVAS_PX) tmp[ny * CANVAS_PX + nx] = 1;
+            }
+        }
+    }
+    for (let py = 0; py < CANVAS_PX; py++) {
+        for (let px = 0; px < CANVAS_PX; px++) {
+            if (!tmp[py * CANVAS_PX + px]) continue;
+            roadMask[py * CANVAS_PX + px] = 1;
+            for (let d = 0; d < 8; d++) {
+                const nx = px + DX8[d], ny = py + DY8[d];
+                if (nx >= 0 && ny >= 0 && nx < CANVAS_PX && ny < CANVAS_PX) roadMask[ny * CANVAS_PX + nx] = 1;
+            }
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FIND NEAREST ROAD PIXEL TO CANVAS CENTER
+// ─────────────────────────────────────────────────────────────────────────────
+let centerRoadPx = CANVAS_PX >> 1;
+let centerRoadPy = CANVAS_PX >> 1;
+let knownRoadPixels = []; // sampled pool of confirmed road pixels for respawning
+
+function findCenterRoad() {
+    const cx = CANVAS_PX >> 1, cy = CANVAS_PX >> 1;
+    // First pass: find nearest road intersection (3+ neighbors) — good spawn point
+    for (let r = 0; r < 250; r++) {
+        for (let dy = -r; dy <= r; dy++) {
+            for (let dx = -r; dx <= r; dx++) {
+                if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                const nx = cx+dx, ny = cy+dy;
+                if (isRoad(nx, ny) && roadNeighbors(nx, ny, -1, -1).length >= 3) {
+                    centerRoadPx = nx; centerRoadPy = ny; return true;
+                }
+            }
+        }
+    }
+    // Fallback: any road pixel near center
+    for (let r = 0; r < 250; r++) {
+        for (let dy = -r; dy <= r; dy++) {
+            for (let dx = -r; dx <= r; dx++) {
+                if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                const nx = cx+dx, ny = cy+dy;
+                if (isRoad(nx, ny)) { centerRoadPx = nx; centerRoadPy = ny; return true; }
+            }
+        }
+    }
+    return false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARTICLE WALK — real-time #262626 pixel traversal
+// ─────────────────────────────────────────────────────────────────────────────
+function roadNeighbors(px, py, prevPx, prevPy) {
+    const out = [];
+    for (let d = 0; d < 8; d++) {
+        const nx = px + DX8[d], ny = py + DY8[d];
+        if (nx === prevPx && ny === prevPy) continue;  // don't backtrack
+        if (isRoad(nx, ny)) out.push([nx, ny]);
+    }
+    return out;
+}
+
+function pickNext(neighbors, px, py, prevPx, prevPy, spawnPx, spawnPy, visited) {
+    const dirX = px - prevPx, dirY = py - prevPy;
+    // Normalize direction so diagonal doesn't beat axis-aligned
+    const dirLen = Math.sqrt(dirX*dirX + dirY*dirY) || 1;
+    const ndx = dirX / dirLen, ndy = dirY / dirLen;
+    // Normalized outward vector
+    const rawX = px - spawnPx, rawY = py - spawnPy;
+    const outLen = Math.sqrt(rawX*rawX + rawY*rawY) || 1;
+    const outX = rawX / outLen, outY = rawY / outLen;
+
+    let best = null, bestScore = -Infinity;
+    for (const [nx, ny] of neighbors) {
+        const stepX = nx - px, stepY = ny - py;
+        const stepLen = Math.sqrt(stepX*stepX + stepY*stepY) || 1;
+        const forward  = (stepX/stepLen) * ndx + (stepY/stepLen) * ndy;  // -1 to 1
+        const outward  = (stepX/stepLen) * outX + (stepY/stepLen) * outY; // -1 to 1
+        const visitPen = visited && visited.has(ny * CANVAS_PX + nx) ? -2.0 : 0;
+        const score    = forward * 1.8 + outward * 0.4 + visitPen + (Math.random() - 0.5) * 0.4;
+        if (score > bestScore) { bestScore = score; best = [nx, ny]; }
+    }
+    return best;
+}
+
+function pixelToScene(px, py) {
+    return {
+        x: (px - CANVAS_PX / 2) * SCENE_SCALE,
+        z: (py - CANVAS_PX / 2) * SCENE_SCALE,
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARTICLE SYSTEM
+// ─────────────────────────────────────────────────────────────────────────────
+let headMesh = null, headPos = null;
+let trailLines = [], trailPos = [], trailCol = [];
+let particles  = [];   // { px, py, prevPx, prevPy, trail: [{x,z}] }
+
+function randomRoadPixel() {
+    const pool = nearCenterPixels.length ? nearCenterPixels : knownRoadPixels;
+    if (!pool.length) return [centerRoadPx, centerRoadPy];
+    return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function makeParticle(ageOffset) {
+    const spx = centerRoadPx, spy = centerRoadPy;
+    const p = {
+        px: spx, py: spy, prevPx: -1, prevPy: -1,
+        spawnPx: spx, spawnPy: spy,
+        trail: [],
+        visited: new Set(),
+        age: ageOffset || 0,
+        maxAge: LIFETIME_MIN + Math.floor(Math.random() * (LIFETIME_MAX - LIFETIME_MIN)),
+    };
+    p.visited.add(spy * CANVAS_PX + spx);
+    const dirs = roadNeighbors(spx, spy, -1, -1);
+    if (dirs.length) {
+        const d = dirs[Math.floor(Math.random() * dirs.length)];
+        p.prevPx = spx - (d[0] - spx);
+        p.prevPy = spy - (d[1] - spy);
+    }
+    return p;
+}
+
+function spawnParticle(ageOffset) {
+    return makeParticle(ageOffset);
+}
+
+function respawnParticle(p) {
+    const spx = centerRoadPx, spy = centerRoadPy;
+    p.px = spx; p.py = spy; p.prevPx = -1; p.prevPy = -1;
+    p.spawnPx = spx; p.spawnPy = spy;
+    p.trail = [];
+    p.visited = new Set();
+    p.visited.add(spy * CANVAS_PX + spx);
+    p.age = 0;
+    p.maxAge = LIFETIME_MIN + Math.floor(Math.random() * (LIFETIME_MAX - LIFETIME_MIN));
+    const dirs = roadNeighbors(spx, spy, -1, -1);
+    if (dirs.length) {
+        const d = dirs[Math.floor(Math.random() * dirs.length)];
+        p.prevPx = spx - (d[0] - spx); p.prevPy = spy - (d[1] - spy);
+    }
+}
+
+function stepParticle(p) {
+    p.age++;
+
+    // Timed respawn
+    if (p.age >= p.maxAge) {
+        respawnParticle(p);
+        return;
+    }
+
+    for (let s = 0; s < STEPS_PER_FRAME; s++) {
+        // Mark current pixel visited (rolling window)
+        const curKey = p.py * CANVAS_PX + p.px;
+        p.visited.add(curKey);
+        if (p.visited.size > LOOP_MEMORY) {
+            p.visited.delete(p.visited.values().next().value);
+        }
+
+        const neighbors = roadNeighbors(p.px, p.py, p.prevPx, p.prevPy);
+        if (!neighbors.length) {
+            respawnParticle(p);
+            break;
+        }
+        const next = pickNext(neighbors, p.px, p.py, p.prevPx, p.prevPy, p.spawnPx, p.spawnPy, p.visited);
+        p.prevPx = p.px; p.prevPy = p.py;
+        p.px = next[0]; p.py = next[1];
+    }
+
+    // Record scene position for trail
+    const pos = pixelToScene(p.px, p.py);
+    p.trail.push(pos);
+    if (p.trail.length > TRAIL_LEN) p.trail.shift();
+}
+
+function initParticleSystem() {
+    // Dispose old
+    for (const ln of trailLines) { ln.geometry.dispose(); ln.material.dispose(); trailGroup.remove(ln); }
+    trailLines = []; trailPos = []; trailCol = [];
+    if (headMesh) { headMesh.geometry.dispose(); headMesh.material.dispose(); scene.remove(headMesh); headMesh = null; }
+    particles = [];
+
+    headPos = new Float32Array(PARTICLE_COUNT * 3);
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+        // Stagger initial ages so particles don't all respawn at once
+        const ageOffset = Math.floor((i / PARTICLE_COUNT) * LIFETIME_MIN);
+        particles.push(spawnParticle(ageOffset));
+
+        const pb = new Float32Array(TRAIL_LEN * 3);
+        const cb = new Float32Array(TRAIL_LEN * 3);
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.BufferAttribute(pb, 3));
+        geo.setAttribute('color',    new THREE.BufferAttribute(cb, 3));
+        const ln = new THREE.Line(geo, new THREE.LineBasicMaterial({ vertexColors: true }));
+        ln.frustumCulled = false;
+        trailGroup.add(ln); trailLines.push(ln); trailPos.push(pb); trailCol.push(cb);
+    }
+
+    const hGeo = new THREE.BufferGeometry();
+    hGeo.setAttribute('position', new THREE.BufferAttribute(headPos, 3));
+    headMesh = new THREE.Points(hGeo, new THREE.PointsMaterial({
+        color: ACCENT, size: 0.5, transparent: true, opacity: 1, sizeAttenuation: true,
+    }));
+    headMesh.frustumCulled = false;
+    scene.add(headMesh);
+}
+
+function updateParticles() {
+    for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        stepParticle(p);
+
+        // Head position
+        const pos = pixelToScene(p.px, p.py);
+        headPos[i*3] = pos.x; headPos[i*3+1] = 0.08; headPos[i*3+2] = pos.z;
+
+        // Trail: j=0 oldest (dark), j=TRAIL_LEN-1 newest (bright red)
+        const pb = trailPos[i], cb = trailCol[i];
+        const tLen = p.trail.length, pad = TRAIL_LEN - tLen;
+        for (let j = 0; j < TRAIL_LEN; j++) {
+            const pt = j < pad ? (p.trail[0] || pos) : p.trail[j - pad];
+            pb[j*3] = pt.x; pb[j*3+1] = 0.06; pb[j*3+2] = pt.z;
+            const lum = Math.pow(j / (TRAIL_LEN - 1), 2);
+            cb[j*3] = 0.9*lum; cb[j*3+1] = 0.07*lum*lum; cb[j*3+2] = 0.07*lum*lum;
+        }
+        const geo = trailLines[i].geometry;
+        geo.attributes.position.needsUpdate = true;
+        geo.attributes.color.needsUpdate    = true;
+    }
+    if (headMesh) headMesh.geometry.attributes.position.needsUpdate = true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEBUG CANVAS
+// ─────────────────────────────────────────────────────────────────────────────
+function drawDebug(tileCanvas) {
+    const dCtx  = $dbgCvs.getContext('2d');
+    const scale = 192 / CANVAS_PX;
+    dCtx.drawImage(tileCanvas, 0, 0, 192, 192);
+    const id = dCtx.getImageData(0, 0, 192, 192), d = id.data;
+    for (let dy = 0; dy < 192; dy++) {
+        for (let dx = 0; dx < 192; dx++) {
+            const sx = Math.floor(dx / scale), sy = Math.floor(dy / scale);
+            if (isRoad(sx, sy)) {
+                const i = (dy*192+dx)*4;
+                d[i]=220; d[i+1]=50; d[i+2]=50; d[i+3]=200;
+            }
+        }
+    }
+    dCtx.putImageData(id, 0, 0);
+    dCtx.strokeStyle = '#e64f4f55'; dCtx.lineWidth = 1;
+    dCtx.beginPath(); dCtx.moveTo(96,0); dCtx.lineTo(96,192); dCtx.stroke();
+    dCtx.beginPath(); dCtx.moveTo(0,96); dCtx.lineTo(192,96); dCtx.stroke();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAP TEXTURE
+// ─────────────────────────────────────────────────────────────────────────────
+let activeTex = null;
+function applyMapTexture(canvas) {
+    if (activeTex) activeTex.dispose();
+    activeTex = new THREE.CanvasTexture(canvas);
+    mapMat.map = activeTex; mapMat.color.set(0xffffff); mapMat.needsUpdate = true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────────────────────────────────────
+let running = false;
+
+async function run(lat, lng) {
+    running = false;
+    const zoom = parseInt($zoom.value);
+    status(`Fetching tiles at z${zoom}…`);
+    pixelData = null;
+
+    try {
+        const { ctx, canvas } = await fetchTiles(lat, lng, zoom);
+        applyMapTexture(canvas);
+        status('Tiles loaded. Reading pixels…');
+
+        try {
+            pixelData = ctx.getImageData(0, 0, CANVAS_PX, CANVAS_PX).data;
+            buildRoadMask();  // exact match + 1px dilation to close intersection gaps
+
+            const ci  = ((CANVAS_PX >> 1) * CANVAS_PX + (CANVAS_PX >> 1)) * 4;
+            const centerColor = `rgb(${pixelData[ci]},${pixelData[ci+1]},${pixelData[ci+2]})`;
+
+            const found = findCenterRoad();
+            if (!found) {
+                status(`No road pixels near center (center=${centerColor}). Try a different location or zoom.`);
+                return;
+            }
+
+            // Build a pool of all road pixels so respawn isn't stuck at one isolated point
+            knownRoadPixels = [];
+            const _cx = CANVAS_PX >> 1, _cy = CANVAS_PX >> 1;
+            const _r2 = SPAWN_RADIUS * SPAWN_RADIUS;
+            nearCenterPixels = [];
+            for (let py2 = 0; py2 < CANVAS_PX; py2++) {
+                for (let px2 = 0; px2 < CANVAS_PX; px2++) {
+                    if (isRoad(px2, py2)) {
+                        knownRoadPixels.push([px2, py2]);
+                        const dx = px2 - _cx, dy = py2 - _cy;
+                        if (dx*dx + dy*dy <= _r2) nearCenterPixels.push([px2, py2]);
+                    }
+                }
+            }
+            console.log(`[road-particles] found ${knownRoadPixels.length} road pixels, ${nearCenterPixels.length} near center`);
+
+            if (!knownRoadPixels.length) {
+                status(`No road pixels (#191919) found. Try a different zoom or location.`);
+                return;
+            }
+
+            const neighbors = roadNeighbors(centerRoadPx, centerRoadPy, -1, -1);
+            const si = (centerRoadPy * CANVAS_PX + centerRoadPx) * 4;
+            const spawnHex = '#' + [pixelData[si],pixelData[si+1],pixelData[si+2]].map(v=>v.toString(16).padStart(2,'0')).join('');
+            console.log(`[road-particles] spawn: ${spawnHex} at (${centerRoadPx},${centerRoadPy}) · ${neighbors.length} neighbors`);
+
+            drawDebug(canvas);
+            initParticleSystem();
+            running = true;
+            status(`Live — ${knownRoadPixels.length} road pixels, ${PARTICLE_COUNT} particles`);
+        } catch (e) {
+            console.warn('getImageData blocked:', e);
+            status('Pixel read blocked (CORS) — cannot detect roads.');
+        }
+    } catch (e) {
+        console.warn('Tile fetch failed:', e);
+        status('Tile fetch failed.');
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANIMATION LOOP
+// ─────────────────────────────────────────────────────────────────────────────
+let time = 0, frame = 0;
+(function animate() {
+    requestAnimationFrame(animate);
+    time += 0.016; frame++;
+    const s = 1 + Math.sin(time*1.5)*0.22;
+    pulseRing.scale.set(s, s, 1);
+    pulseMat.opacity = 0.22 - Math.sin(time*1.5)*0.1;
+    if (running && pixelData && frame % STEP_INTERVAL === 0) updateParticles();
+    controls.update();
+    renderer.render(scene, camera);
+})();
+
+window.addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+});
+
+function restart() {
+    const lat = parseFloat(document.getElementById('lat-in').value);
+    const lng = parseFloat(document.getElementById('lng-in').value);
+    if (!isNaN(lat) && !isNaN(lng)) run(lat, lng);
+}
+window.restart = restart;
+
+run(40.758, -73.985);
+</script>
+</body>
+</html>

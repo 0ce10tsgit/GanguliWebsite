@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ganguli.dev</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         :root {
             --accent: #e64f4f;
@@ -20,8 +20,9 @@
             min-height: 100vh;
             background-color: #000;
             position: relative;
+            overflow: hidden;
         }
-        #map {
+        #scene-container {
             position: fixed;
             top: 0;
             left: 0;
@@ -76,7 +77,7 @@
     </style>
 </head>
 <body>
-    <div id="map"></div>
+    <div id="scene-container"></div>
     <h1>hey.</h1>
     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9LXMIg-A8rCbNZw0ku7Ys6pa1CO4VxrFuKw&s" alt="ganguli.dev">
     <div class="location" id="location">Loading location...</div>
@@ -94,49 +95,176 @@
       </a>
     </div>
     <script>
-        const ACCENT = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+        const ACCENT = 0xe64f4f;
+        const ACCENT_CSS = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+
+        // --- Three.js scene setup ---
+        const container = document.getElementById('scene-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.FogExp2(0x000000, 0.012);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(18, 14, 18);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.4;
+        controls.enableZoom = false;
+        controls.enablePan = false;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minPolarAngle = 0.3;
+        controls.target.set(0, 0, 0);
+
+        // --- Ground plane with grid ---
+        const planeSize = 120;
+        const planeGeo = new THREE.PlaneGeometry(planeSize, planeSize);
+        const planeMat = new THREE.MeshBasicMaterial({ color: 0x050508, side: THREE.DoubleSide });
+        const plane = new THREE.Mesh(planeGeo, planeMat);
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.y = -0.01;
+        scene.add(plane);
+
+        // Grid helper
+        const grid = new THREE.GridHelper(planeSize, 60, 0x1a1a2e, 0x0d0d1a);
+        scene.add(grid);
+
+        // Inner brighter grid
+        const gridInner = new THREE.GridHelper(40, 20, 0x2a1a1a, 0x1a0d0d);
+        scene.add(gridInner);
+
+        // --- Coordinate ring (accent circle on the ground) ---
+        const ringGeo = new THREE.RingGeometry(1.8, 2.0, 64);
+        const ringMat = new THREE.MeshBasicMaterial({ color: ACCENT, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.02;
+        scene.add(ring);
+
+        // Outer pulse ring
+        const pulseGeo = new THREE.RingGeometry(2.5, 2.6, 64);
+        const pulseMat = new THREE.MeshBasicMaterial({ color: ACCENT, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
+        const pulseRing = new THREE.Mesh(pulseGeo, pulseMat);
+        pulseRing.rotation.x = -Math.PI / 2;
+        pulseRing.position.y = 0.01;
+        scene.add(pulseRing);
+
+        // --- Central marker pillar ---
+        const pillarGeo = new THREE.CylinderGeometry(0.15, 0.15, 5, 16);
+        const pillarMat = new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.6 });
+        const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+        pillar.position.y = 2.5;
+        scene.add(pillar);
+
+        // Marker sphere on top
+        const sphereGeo = new THREE.SphereGeometry(0.4, 32, 32);
+        const sphereMat = new THREE.MeshBasicMaterial({ color: ACCENT });
+        const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+        sphere.position.y = 5.2;
+        scene.add(sphere);
+
+        // Glow sphere (larger, transparent)
+        const glowGeo = new THREE.SphereGeometry(0.8, 32, 32);
+        const glowMat = new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.15 });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.position.y = 5.2;
+        scene.add(glow);
+
+        // --- Scatter some subtle reference points ---
+        const dotGeo = new THREE.CircleGeometry(0.12, 16);
+        const dotMat = new THREE.MeshBasicMaterial({ color: 0x333344, side: THREE.DoubleSide });
+        for (let i = 0; i < 40; i++) {
+            const dot = new THREE.Mesh(dotGeo, dotMat);
+            dot.rotation.x = -Math.PI / 2;
+            dot.position.set(
+                (Math.random() - 0.5) * 50,
+                0.02,
+                (Math.random() - 0.5) * 50
+            );
+            scene.add(dot);
+        }
+
+        // --- Floating particles ---
+        const particleCount = 200;
+        const particleGeo = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 60;
+            positions[i * 3 + 1] = Math.random() * 15;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0x444466, size: 0.08, transparent: true, opacity: 0.6 });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
+
+        // --- Crosshair lines on ground through center ---
+        const lineMat = new THREE.LineBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.15 });
+        const lineLen = 30;
+        const lineX = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(-lineLen, 0.02, 0),
+            new THREE.Vector3(lineLen, 0.02, 0)
+        ]);
+        scene.add(new THREE.Line(lineX, lineMat));
+        const lineZ = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0.02, -lineLen),
+            new THREE.Vector3(0, 0.02, lineLen)
+        ]);
+        scene.add(new THREE.Line(lineZ, lineMat));
+
+        // --- Animation loop ---
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.016;
+
+            // Pulse ring animation
+            const pulseScale = 1 + Math.sin(time * 1.5) * 0.3;
+            pulseRing.scale.set(pulseScale, pulseScale, 1);
+            pulseMat.opacity = 0.3 - Math.sin(time * 1.5) * 0.15;
+
+            // Glow pulse
+            const glowScale = 1 + Math.sin(time * 2) * 0.2;
+            glow.scale.set(glowScale, glowScale, glowScale);
+
+            // Sphere gentle bob
+            sphere.position.y = 5.2 + Math.sin(time * 0.8) * 0.15;
+            glow.position.y = sphere.position.y;
+
+            // Particles drift
+            const posArr = particleGeo.attributes.position.array;
+            for (let i = 0; i < particleCount; i++) {
+                posArr[i * 3 + 1] += Math.sin(time + i) * 0.002;
+            }
+            particleGeo.attributes.position.needsUpdate = true;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- Resize handler ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- Location fetch (same logic as before) ---
         fetch('/location.php')
             .then(response => response.json())
             .then(data => {
                 document.getElementById('location').innerHTML = `${data.city}, ${data.regionName}<br>${data.lat}, ${data.lon}`;
-
-                const map = L.map('map', {
-                    dragging: false,
-                    zoomControl: false,
-                    scrollWheelZoom: false,
-                    doubleClickZoom: false,
-                    touchZoom: false,
-                    keyboard: false,
-                    boxZoom: false,
-                }).setView([data.lat, data.lon], 12);
-
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-                }).addTo(map);
-
-                L.circleMarker([data.lat, data.lon], {
-                    color: ACCENT,
-                    fillColor: ACCENT,
-                    fillOpacity: 0.7,
-                    radius: 10,
-                    weight: 2,
-                }).addTo(map);
             })
             .catch(error => {
-            // if there an error than put it at RPI
                 document.getElementById('location').textContent = 'welcome';
-                const map = L.map('map', {
-                    dragging: false,
-                    zoomControl: false,
-                    scrollWheelZoom: false,
-                    doubleClickZoom: false,
-                    touchZoom: false,
-                    keyboard: false,
-                    boxZoom: false,
-                }).setView([42.729, -73.678], 12);
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
-                }).addTo(map);
             });
     </script>
 </body>
