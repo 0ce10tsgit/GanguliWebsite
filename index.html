@@ -192,7 +192,7 @@ function status(msg) { $status.textContent = msg; }
 const container = document.getElementById('container');
 const scene     = new THREE.Scene();
 scene.background = new THREE.Color(20/255, 5/255, 7/255);
-scene.fog = new THREE.FogExp2(new THREE.Color(20/255, 5/255, 7/255), 0.006);
+scene.fog = null;
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
 // pitch=69°, dist=62
@@ -200,7 +200,7 @@ camera.position.set(62*Math.cos(69*Math.PI/180), 62*Math.sin(69*Math.PI/180), 62
 
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(0.75);
+renderer.setPixelRatio(0.6);
 container.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -258,12 +258,12 @@ async function fetchTiles(lat, lng, zoom) {
 
     const results = await Promise.all(tiles);
 
-    // Outer texture: all tiles downsampled to 1024×1024
+    // Outer texture: all tiles downsampled to 512×512
     const outerCanvas = document.createElement('canvas');
-    outerCanvas.width = outerCanvas.height = 1024;
+    outerCanvas.width = outerCanvas.height = 512;
     const oCtx = outerCanvas.getContext('2d');
     oCtx.imageSmoothingEnabled = true;
-    const loTile = 1024 / VISUAL_TILE_GRID;
+    const loTile = 512 / VISUAL_TILE_GRID;
     for (const { img, tx, ty } of results) {
         const gx = tx - center.x + vhalf, gy = ty - center.y + vhalf;
         oCtx.drawImage(img, gx * loTile, gy * loTile, loTile, loTile);
