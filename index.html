@@ -160,8 +160,8 @@ const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units 
 const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;             // ≈ 93 units (map plane)
 const ACCENT         = 0xe64f4f;
 
-const PARTICLE_COUNT  = 50;
-const SPAWN_POINT_COUNT = 10; // number of random spawn points distributed across the mask
+const PARTICLE_COUNT  = 70;
+const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
 const TRAIL_LEN       = 10;
 const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
 const STEP_INTERVAL   = 10;    // only step particles every N frames (slows them down)
@@ -213,10 +213,6 @@ controls.maxPolarAngle = Math.PI / 2.05; controls.minPolarAngle = 0.1;
 // Ground planes
 
 
-const mapMat   = new THREE.MeshBasicMaterial({ color: 0x080810 });
-const mapPlane = new THREE.Mesh(new THREE.PlaneGeometry(VISUAL_GROUND_SIZE, VISUAL_GROUND_SIZE), mapMat);
-mapPlane.rotation.x = -Math.PI / 2; mapPlane.position.y = -0.01; scene.add(mapPlane);
-
 const innerMapMat   = new THREE.MeshBasicMaterial({ color: 0x080810 });
 const innerMapPlane = new THREE.Mesh(new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE), innerMapMat);
 innerMapPlane.rotation.x = -Math.PI / 2; innerMapPlane.position.y = 0.0; scene.add(innerMapPlane);
@@ -253,17 +249,6 @@ async function fetchTiles(lat, lng, zoom) {
 
     const results = await Promise.all(tiles);
 
-    // Outer texture: all tiles downsampled to 512×512
-    const outerCanvas = document.createElement('canvas');
-    outerCanvas.width = outerCanvas.height = 512;
-    const oCtx = outerCanvas.getContext('2d');
-    oCtx.imageSmoothingEnabled = true;
-    const loTile = 512 / VISUAL_TILE_GRID;
-    for (const { img, tx, ty } of results) {
-        const gx = tx - center.x + vhalf, gy = ty - center.y + vhalf;
-        oCtx.drawImage(img, gx * loTile, gy * loTile, loTile, loTile);
-    }
-
     // Inner texture: center 5×5 tiles at full res, cropped to mask area (CANVAS_PX × CANVAS_PX)
     const innerSpan = (INNER_HALF * 2 + 1) * TILE_SIZE; // 1280px
     const tempCanvas = document.createElement('canvas');
@@ -282,7 +267,7 @@ async function fetchTiles(lat, lng, zoom) {
     const iCtx = innerCanvas.getContext('2d');
     iCtx.drawImage(tempCanvas, tempMaskOffset, tempMaskOffset, CANVAS_PX, CANVAS_PX, 0, 0, CANVAS_PX, CANVAS_PX);
 
-    return { outerCanvas, innerCanvas, maskCtx: iCtx };
+    return { innerCanvas, maskCtx: iCtx };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -556,7 +541,7 @@ function initParticleSystem() {
     trailGeo.setAttribute('color',    new THREE.BufferAttribute(allCol, 3));
     // Draw as points so we don't need per-particle line segments
     trailMesh = new THREE.Points(trailGeo, new THREE.PointsMaterial({
-        vertexColors: true, size: 2, sizeAttenuation: false,
+        vertexColors: true, size: 0.12, sizeAttenuation: true,
     }));
     trailMesh.frustumCulled = false;
     trailGroup.add(trailMesh);
@@ -564,7 +549,7 @@ function initParticleSystem() {
     const hGeo = new THREE.BufferGeometry();
     hGeo.setAttribute('position', new THREE.BufferAttribute(headPos, 3));
     headMesh = new THREE.Points(hGeo, new THREE.PointsMaterial({
-        color: ACCENT, size: 6, sizeAttenuation: false,
+        color: ACCENT, size: 0.5, sizeAttenuation: true,
     }));
     headMesh.frustumCulled = false;
     scene.add(headMesh);
@@ -602,15 +587,12 @@ function updateParticles() {
 // ─────────────────────────────────────────────────────────────────────────────
 // MAP TEXTURE
 // ─────────────────────────────────────────────────────────────────────────────
-let activeTex = null, activeInnerTex = null;
+let activeInnerTex = null;
 let tileCanvasRef = null;
 
-function applyMapTexture(outerCanvas, innerCanvas) {
-    if (activeTex) activeTex.dispose();
+function applyMapTexture(innerCanvas) {
     if (activeInnerTex) activeInnerTex.dispose();
-    activeTex = new THREE.CanvasTexture(outerCanvas);
     activeInnerTex = new THREE.CanvasTexture(innerCanvas);
-    mapMat.map = activeTex; mapMat.color.set(0xffffff); mapMat.needsUpdate = true;
     innerMapMat.map = activeInnerTex; innerMapMat.color.set(0xffffff); innerMapMat.needsUpdate = true;
 }
 
@@ -621,14 +603,14 @@ let running = false;
 
 async function run(lat, lng) {
     running = false;
-    const zoom = 14;
+    const zoom = 13;
     status(`Fetching tiles at z${zoom}…`);
     pixelData = null;
 
     try {
-        const { outerCanvas, innerCanvas, maskCtx } = await fetchTiles(lat, lng, zoom);
-        tileCanvasRef = outerCanvas;
-        applyMapTexture(outerCanvas, innerCanvas);
+        const { innerCanvas, maskCtx } = await fetchTiles(lat, lng, zoom);
+        tileCanvasRef = innerCanvas;
+        applyMapTexture(innerCanvas);
         status('Tiles loaded. Reading pixels…');
 
         try {
