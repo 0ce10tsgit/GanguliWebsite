@@ -22,6 +22,46 @@
         #top-bar #city {
             color: var(--accent); font-size: 28px; font-weight: bold;
         }
+        #city-info-btn {
+            pointer-events: all;
+            cursor: pointer;
+            background: none;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            font-size: 14px;
+            font-weight: bold;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.2s, color 0.2s;
+        }
+        #city-info-btn:hover {
+            background: var(--accent);
+            color: #000;
+        }
+        #city-tooltip {
+            display: none;
+            position: fixed;
+            top: 80px;
+            left: 32px;
+            background: rgba(20,20,20,0.95);
+            border: 1px solid var(--accent);
+            color: #fff;
+            font-size: 14px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            max-width: 260px;
+            z-index: 100;
+            pointer-events: none;
+        }
+        #city-tooltip.visible {
+            display: block;
+        }
         #bottom-bar {
             position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
             display: flex; flex-direction: column; align-items: center; gap: 12px;
@@ -62,7 +102,9 @@
 <div id="top-bar">
     <h1>hey.</h1>
     <span id="city"></span>
+    <button id="city-info-btn" title="About this location">?</button>
 </div>
+<div id="city-tooltip">Your approximate location is detected via IP address, if you are using a VPN or special network this may be dead wrong</div>
 
 <div id="right-panel">
     <img src="IMG_0976.jpeg" alt="Oyon Ganguli">
@@ -116,10 +158,10 @@ const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units 
 const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;             // ≈ 93 units (map plane)
 const ACCENT         = 0xe64f4f;
 
-const PARTICLE_COUNT  = 80;
+const PARTICLE_COUNT  = 70;
 const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
 const TRAIL_LEN       = 28;
-const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
+const STEPS_PER_FRAME = 1;    // canvas pixels advanced per step
 const STEP_INTERVAL   = 5;    // only step particles every N frames (slows them down)
 const SPAWN_RADIUS    = 120;  // canvas px from center to sample spawn pool from
 const LIFETIME_MIN    = 300;  // frames before forced respawn (~5s)
@@ -144,8 +186,8 @@ function status(msg) { $status.textContent = msg; }
 // ─────────────────────────────────────────────────────────────────────────────
 const container = document.getElementById('container');
 const scene     = new THREE.Scene();
-scene.background = new THREE.Color(0/255, 0/255, 17/255);
-scene.fog = new THREE.FogExp2(new THREE.Color(0/255, 0/255, 17/255), 0.006);
+scene.background = new THREE.Color(20/255, 5/255, 7/255);
+scene.fog = new THREE.FogExp2(new THREE.Color(20/255, 5/255, 7/255), 0.006);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
 // pitch=64°, dist=62
@@ -160,7 +202,7 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = 0.05;
 controls.autoRotate = true; controls.autoRotateSpeed = 0.35;
 controls.enableZoom = false; controls.enablePan = false;
-controls.enableRotate = true;
+controls.enableRotate = false;
 controls.maxPolarAngle = Math.PI / 2.05; controls.minPolarAngle = 0.1;
 
 // Ground planes
@@ -630,10 +672,19 @@ window.addEventListener('resize', () => {
 });
 
 
+const cityInfoBtn = document.getElementById('city-info-btn');
+const cityTooltip = document.getElementById('city-tooltip');
+cityInfoBtn.addEventListener('click', () => {
+    cityTooltip.classList.toggle('visible');
+});
+document.addEventListener('click', (e) => {
+    if (e.target !== cityInfoBtn) cityTooltip.classList.remove('visible');
+});
+
 fetch('/location.php')
     .then(r => r.json())
     .then(d => {
-        document.getElementById('city').textContent = `near and around ${d.city}`;
+        document.getElementById('city').textContent = `near and around ${d.city} `;
         run(d.lat, d.lon);
     })
     .catch(() => {
