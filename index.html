@@ -158,11 +158,11 @@ const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units 
 const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;             // ≈ 93 units (map plane)
 const ACCENT         = 0xe64f4f;
 
-const PARTICLE_COUNT  = 70;
+const PARTICLE_COUNT  = 40;
 const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
 const TRAIL_LEN       = 28;
-const STEPS_PER_FRAME = 1;    // canvas pixels advanced per step
-const STEP_INTERVAL   = 5;    // only step particles every N frames (slows them down)
+const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
+const STEP_INTERVAL   = 7;    // only step particles every N frames (slows them down)
 const SPAWN_RADIUS    = 120;  // canvas px from center to sample spawn pool from
 const LIFETIME_MIN    = 300;  // frames before forced respawn (~5s)
 const LIFETIME_MAX    = 1000;  // frames before forced respawn (~10s)
