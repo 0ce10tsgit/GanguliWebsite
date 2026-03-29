@@ -11,6 +11,14 @@
         body { background: #000; overflow: hidden; font-family: Arial, sans-serif; }
         #container { width: 100vw; height: 100vh; }
         #status { display: none; }
+        #mobile-warning {
+            display: none;
+            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+            z-index: 20; background: rgba(20,20,20,0.92);
+            border: 1px solid var(--accent); color: #aaa;
+            font-size: 13px; padding: 10px 16px; border-radius: 6px;
+            text-align: center; max-width: 280px; pointer-events: none;
+        }
         #top-bar {
             position: fixed; top: 0; left: 0; right: 0; z-index: 10;
             display: flex; align-items: center; gap: 24px;
@@ -94,11 +102,22 @@
         #right-panel .title {
             color: #aaa; font-size: 13px;
         }
+        @media (max-width: 600px) {
+            #top-bar h1 { font-size: 32px; }
+            #top-bar #city { font-size: 18px; }
+            #top-bar { padding: 12px 16px; gap: 12px; }
+            #right-panel { top: 60px; right: 16px; }
+            #right-panel img { width: 52px; height: 52px; }
+            #right-panel .name { font-size: 16px; }
+            #right-panel .title { font-size: 11px; }
+            #city-tooltip { top: 60px; left: 16px; }
+        }
     </style>
 </head>
 <body>
 <div id="container"></div>
 <div id="status"></div>
+<div id="mobile-warning">Best viewed on desktop — mobile WebGL performance is limited</div>
 
 <div id="top-bar">
     <h1>hey.</h1>
@@ -152,7 +171,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const TILE_SIZE        = 256;
 const TILE_GRID        = 4;                                      // mask: 3×3 tiles
 const CANVAS_PX        = TILE_GRID * TILE_SIZE;                  // 768 — road mask area
-const VISUAL_TILE_GRID = 16;                                      // visual: 9×9 tiles
+const VISUAL_TILE_GRID = 19;                                      // visual: 9×9 tiles
 const VISUAL_PX        = VISUAL_TILE_GRID * TILE_SIZE;           // 2304
 const MASK_OFFSET      = ((VISUAL_TILE_GRID - TILE_GRID) / 2) * TILE_SIZE; // 512
 const SCENE_SCALE      = 0.052;
@@ -160,7 +179,7 @@ const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units 
 const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;             // ≈ 93 units (map plane)
 const ACCENT         = 0xe64f4f;
 
-const PARTICLE_COUNT  = 70;
+const PARTICLE_COUNT  = 80;
 const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
 const TRAIL_LEN       = 10;
 const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
@@ -200,7 +219,7 @@ camera.position.set(62*Math.cos(69*Math.PI/180), 62*Math.sin(69*Math.PI/180), 62
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(0.75);
+renderer.setPixelRatio(0.9);
 container.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -725,6 +744,9 @@ cityInfoBtn.addEventListener('click', () => {
 document.addEventListener('click', (e) => {
     if (e.target !== cityInfoBtn) cityTooltip.classList.remove('visible');
 });
+
+if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent))
+    document.getElementById('mobile-warning').style.display = 'block';
 
 fetch('/location.php')
     .then(r => r.json())
