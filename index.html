@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Road Particle Effect — Test</title>
+    <title>ganguli.dev</title>
+    <link rel="icon" type="image/png" href="image.png">
     <style>
         :root { --accent: #e64f4f; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -158,11 +159,11 @@ const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units 
 const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;             // ≈ 93 units (map plane)
 const ACCENT         = 0xe64f4f;
 
-const PARTICLE_COUNT  = 40;
+const PARTICLE_COUNT  = 75;
 const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
-const TRAIL_LEN       = 28;
+const TRAIL_LEN       = 12;
 const STEPS_PER_FRAME = 1;    // canvas pixels advanced per step
-const STEP_INTERVAL   = 5;    // only step particles every N frames (slows them down)
+const STEP_INTERVAL   = 6;    // only step particles every N frames (slows them down)
 const SPAWN_RADIUS    = 120;  // canvas px from center to sample spawn pool from
 const LIFETIME_MIN    = 300;  // frames before forced respawn (~5s)
 const LIFETIME_MAX    = 1000;  // frames before forced respawn (~10s)
@@ -173,6 +174,9 @@ const ROAD_R = 25, ROAD_G = 25, ROAD_B = 25;
 
 const DX8 = [-1, 0, 1, -1, 1, -1, 0, 1];
 const DY8 = [-1,-1,-1,  0, 0,  1, 1, 1];
+const _nBuf = new Int32Array(16); // pre-allocated neighbor x,y pairs
+let _nCount = 0;
+let _bestX = 0, _bestY = 0; // pre-allocated pickNext result
 
 // ─────────────────────────────────────────────────────────────────────────────
 // UI
@@ -217,6 +221,10 @@ const mapMat   = new THREE.MeshBasicMaterial({ color: 0x080810 });
 const mapPlane = new THREE.Mesh(new THREE.PlaneGeometry(VISUAL_GROUND_SIZE, VISUAL_GROUND_SIZE), mapMat);
 mapPlane.rotation.x = -Math.PI / 2; mapPlane.position.y = -0.01; scene.add(mapPlane);
 
+const innerMapMat   = new THREE.MeshBasicMaterial({ color: 0x080810 });
+const innerMapPlane = new THREE.Mesh(new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE), innerMapMat);
+innerMapPlane.rotation.x = -Math.PI / 2; innerMapPlane.position.y = 0.0; scene.add(innerMapPlane);
+
 
 const trailGroup = new THREE.Group(); scene.add(trailGroup);
 
@@ -234,11 +242,7 @@ function latLngToTile(lat, lng, zoom) {
 async function fetchTiles(lat, lng, zoom) {
     const center  = latLngToTile(lat, lng, zoom);
     const vhalf   = Math.floor(VISUAL_TILE_GRID / 2);
-
-    // Full 7×7 visual canvas
-    const vCanvas = document.createElement('canvas');
-    vCanvas.width = vCanvas.height = VISUAL_PX;
-    const vCtx = vCanvas.getContext('2d');
+    const INNER_HALF = 2; // tiles either side of center drawn at full res
 
     const load = (tx, ty) => new Promise((res, rej) => {
         const img = new Image(); img.crossOrigin = 'anonymous';
@@ -252,16 +256,37 @@ async function fetchTiles(lat, lng, zoom) {
             tiles.push(load(center.x+dx, center.y+dy));
 
     const results = await Promise.all(tiles);
-    for (const { img, tx, ty } of results)
-        vCtx.drawImage(img, (tx-center.x+vhalf)*TILE_SIZE, (ty-center.y+vhalf)*TILE_SIZE, TILE_SIZE, TILE_SIZE);
 
-    // Extract only center 3×3 for mask — no extra compute
-    const maskCanvas = document.createElement('canvas');
-    maskCanvas.width = maskCanvas.height = CANVAS_PX;
-    const mCtx = maskCanvas.getContext('2d');
-    mCtx.drawImage(vCanvas, MASK_OFFSET, MASK_OFFSET, CANVAS_PX, CANVAS_PX, 0, 0, CANVAS_PX, CANVAS_PX);
+    // Outer texture: all tiles downsampled to 1024×1024
+    const outerCanvas = document.createElement('canvas');
+    outerCanvas.width = outerCanvas.height = 1024;
+    const oCtx = outerCanvas.getContext('2d');
+    oCtx.imageSmoothingEnabled = true;
+    const loTile = 1024 / VISUAL_TILE_GRID;
+    for (const { img, tx, ty } of results) {
+        const gx = tx - center.x + vhalf, gy = ty - center.y + vhalf;
+        oCtx.drawImage(img, gx * loTile, gy * loTile, loTile, loTile);
+    }
 
-    return { visualCanvas: vCanvas, maskCtx: mCtx };
+    // Inner texture: center 5×5 tiles at full res, cropped to mask area (CANVAS_PX × CANVAS_PX)
+    const innerSpan = (INNER_HALF * 2 + 1) * TILE_SIZE; // 1280px
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = tempCanvas.height = innerSpan;
+    const tCtx = tempCanvas.getContext('2d');
+    for (const { img, tx, ty } of results) {
+        const dx = tx - center.x, dy = ty - center.y;
+        if (Math.abs(dx) <= INNER_HALF && Math.abs(dy) <= INNER_HALF)
+            tCtx.drawImage(img, (dx + INNER_HALF) * TILE_SIZE, (dy + INNER_HALF) * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+    }
+
+    // Offset of mask area within the temp canvas
+    const tempMaskOffset = MASK_OFFSET - (vhalf - INNER_HALF) * TILE_SIZE; // 128px
+    const innerCanvas = document.createElement('canvas');
+    innerCanvas.width = innerCanvas.height = CANVAS_PX;
+    const iCtx = innerCanvas.getContext('2d');
+    iCtx.drawImage(tempCanvas, tempMaskOffset, tempMaskOffset, CANVAS_PX, CANVAS_PX, 0, 0, CANVAS_PX, CANVAS_PX);
+
+    return { outerCanvas, innerCanvas, maskCtx: iCtx };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -332,7 +357,7 @@ function findCenterRoad() {
             for (let dx = -r; dx <= r; dx++) {
                 if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
                 const nx = cx+dx, ny = cy+dy;
-                if (isRoad(nx, ny) && roadNeighbors(nx, ny, -1, -1).length >= 3) {
+                if (isRoad(nx, ny) && roadNeighbors(nx, ny, -1, -1) >= 3) {
                     centerRoadPx = nx; centerRoadPy = ny; return true;
                 }
             }
@@ -355,36 +380,40 @@ function findCenterRoad() {
 // PARTICLE WALK — real-time #262626 pixel traversal
 // ─────────────────────────────────────────────────────────────────────────────
 function roadNeighbors(px, py, prevPx, prevPy) {
-    const out = [];
+    _nCount = 0;
     for (let d = 0; d < 8; d++) {
         const nx = px + DX8[d], ny = py + DY8[d];
-        if (nx === prevPx && ny === prevPy) continue;  // don't backtrack
-        if (isRoad(nx, ny)) out.push([nx, ny]);
+        if (nx === prevPx && ny === prevPy) continue;
+        if (isRoad(nx, ny)) { _nBuf[_nCount*2] = nx; _nBuf[_nCount*2+1] = ny; _nCount++; }
     }
-    return out;
+    return _nCount;
 }
 
-function pickNext(neighbors, px, py, prevPx, prevPy, spawnPx, spawnPy, visited) {
+function visitedHas(buf, fill, key) {
+    for (let i = 0; i < fill; i++) if (buf[i] === key) return true;
+    return false;
+}
+
+function pickNext(count, px, py, prevPx, prevPy, spawnPx, spawnPy, vBuf, vFill) {
     const dirX = px - prevPx, dirY = py - prevPy;
-    // Normalize direction so diagonal doesn't beat axis-aligned
     const dirLen = Math.sqrt(dirX*dirX + dirY*dirY) || 1;
     const ndx = dirX / dirLen, ndy = dirY / dirLen;
-    // Normalized outward vector
     const rawX = px - spawnPx, rawY = py - spawnPy;
     const outLen = Math.sqrt(rawX*rawX + rawY*rawY) || 1;
     const outX = rawX / outLen, outY = rawY / outLen;
 
-    let best = null, bestScore = -Infinity;
-    for (const [nx, ny] of neighbors) {
+    let bestScore = -Infinity;
+    _bestX = _nBuf[0]; _bestY = _nBuf[1];
+    for (let i = 0; i < count; i++) {
+        const nx = _nBuf[i*2], ny = _nBuf[i*2+1];
         const stepX = nx - px, stepY = ny - py;
         const stepLen = Math.sqrt(stepX*stepX + stepY*stepY) || 1;
-        const forward  = (stepX/stepLen) * ndx + (stepY/stepLen) * ndy;  // -1 to 1
-        const outward  = (stepX/stepLen) * outX + (stepY/stepLen) * outY; // -1 to 1
-        const visitPen = visited && visited.has(ny * CANVAS_PX + nx) ? -2.0 : 0;
+        const forward  = (stepX/stepLen) * ndx + (stepY/stepLen) * ndy;
+        const outward  = (stepX/stepLen) * outX + (stepY/stepLen) * outY;
+        const visitPen = visitedHas(vBuf, vFill, ny * CANVAS_PX + nx) ? -2.0 : 0;
         const score    = forward * 1.8 + outward * 0.4 + visitPen + (Math.random() - 0.5) * 0.4;
-        if (score > bestScore) { bestScore = score; best = [nx, ny]; }
+        if (score > bestScore) { bestScore = score; _bestX = nx; _bestY = ny; }
     }
-    return best;
 }
 
 function pixelToScene(px, py) {
@@ -408,7 +437,7 @@ function buildSpawnPoints() {
     const rawPool = knownRoadPixels.filter(([px, py]) =>
         rawRoadMask[py * CANVAS_PX + px] === 1 && !isKillColor(px, py));
     const src2 = rawPool.length ? rawPool : knownRoadPixels;
-    const pool = src2.filter(([px, py]) => roadNeighbors(px, py, -1, -1).length >= 3 && !isKillColor(px, py));
+    const pool = src2.filter(([px, py]) => roadNeighbors(px, py, -1, -1) >= 3 && !isKillColor(px, py));
     const src  = pool.length ? pool : src2;
     spawnPoints = [];
     // Shuffle a copy and pick evenly spaced entries for distribution
@@ -427,21 +456,21 @@ function initAtSpawn(p, spx, spy, ageOffset) {
     p.px = spx; p.py = spy; p.prevPx = -1; p.prevPy = -1;
     p.spawnPx = spx; p.spawnPy = spy;
     p.trail = []; p.trailHead = 0; p.trailFill = 0;
-    p.visited = new Set();
-    p.visited.add(spy * CANVAS_PX + spx);
+    p.vHead = 0; p.vFill = 0;
+    p.vBuf[0] = spy * CANVAS_PX + spx; p.vHead = 1; p.vFill = 1;
     p.age = ageOffset || 0;
     p.maxAge = LIFETIME_MIN + Math.floor(Math.random() * (LIFETIME_MAX - LIFETIME_MIN));
-    const dirs = roadNeighbors(spx, spy, -1, -1);
-    if (dirs.length) {
-        const d = dirs[Math.floor(Math.random() * dirs.length)];
-        p.prevPx = spx - (d[0] - spx);
-        p.prevPy = spy - (d[1] - spy);
+    const cnt = roadNeighbors(spx, spy, -1, -1);
+    if (cnt) {
+        const d = Math.floor(Math.random() * cnt);
+        p.prevPx = spx - (_nBuf[d*2] - spx);
+        p.prevPy = spy - (_nBuf[d*2+1] - spy);
     }
 }
 
 function makeParticle(ageOffset) {
     const [spx, spy] = randomSpawnPoint();
-    const p = { px: 0, py: 0, prevPx: -1, prevPy: -1, spawnPx: 0, spawnPy: 0, trail: [], visited: new Set(), age: 0, maxAge: 0 };
+    const p = { px: 0, py: 0, prevPx: -1, prevPy: -1, spawnPx: 0, spawnPy: 0, trail: [], vBuf: new Uint32Array(LOOP_MEMORY), vHead: 0, vFill: 0, age: 0, maxAge: 0 };
     initAtSpawn(p, spx, spy, ageOffset);
     return p;
 }
@@ -477,20 +506,18 @@ function stepParticle(p) {
         }
 
         // Mark current pixel visited (rolling window)
-        const curKey = p.py * CANVAS_PX + p.px;
-        p.visited.add(curKey);
-        if (p.visited.size > LOOP_MEMORY) {
-            p.visited.delete(p.visited.values().next().value);
-        }
+        p.vBuf[p.vHead] = p.py * CANVAS_PX + p.px;
+        p.vHead = (p.vHead + 1) % LOOP_MEMORY;
+        if (p.vFill < LOOP_MEMORY) p.vFill++;
 
-        const neighbors = roadNeighbors(p.px, p.py, p.prevPx, p.prevPy);
-        if (!neighbors.length) {
+        const cnt = roadNeighbors(p.px, p.py, p.prevPx, p.prevPy);
+        if (!cnt) {
             respawnParticle(p);
             break;
         }
-        const next = pickNext(neighbors, p.px, p.py, p.prevPx, p.prevPy, p.spawnPx, p.spawnPy, p.visited);
+        pickNext(cnt, p.px, p.py, p.prevPx, p.prevPy, p.spawnPx, p.spawnPy, p.vBuf, p.vFill);
         p.prevPx = p.px; p.prevPy = p.py;
-        p.px = next[0]; p.py = next[1];
+        p.px = _bestX; p.py = _bestY;
     }
 
     // Record scene position into ring buffer
@@ -577,13 +604,16 @@ function updateParticles() {
 // ─────────────────────────────────────────────────────────────────────────────
 // MAP TEXTURE
 // ─────────────────────────────────────────────────────────────────────────────
-let activeTex = null;
-let tileCanvasRef = null; // original tiles, unmodified
+let activeTex = null, activeInnerTex = null;
+let tileCanvasRef = null;
 
-function applyMapTexture(canvas) {
+function applyMapTexture(outerCanvas, innerCanvas) {
     if (activeTex) activeTex.dispose();
-    activeTex = new THREE.CanvasTexture(canvas);
+    if (activeInnerTex) activeInnerTex.dispose();
+    activeTex = new THREE.CanvasTexture(outerCanvas);
+    activeInnerTex = new THREE.CanvasTexture(innerCanvas);
     mapMat.map = activeTex; mapMat.color.set(0xffffff); mapMat.needsUpdate = true;
+    innerMapMat.map = activeInnerTex; innerMapMat.color.set(0xffffff); innerMapMat.needsUpdate = true;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -598,9 +628,9 @@ async function run(lat, lng) {
     pixelData = null;
 
     try {
-        const { visualCanvas, maskCtx } = await fetchTiles(lat, lng, zoom);
-        tileCanvasRef = visualCanvas;
-        applyMapTexture(visualCanvas);
+        const { outerCanvas, innerCanvas, maskCtx } = await fetchTiles(lat, lng, zoom);
+        tileCanvasRef = outerCanvas;
+        applyMapTexture(outerCanvas, innerCanvas);
         status('Tiles loaded. Reading pixels…');
 
         try {
@@ -656,12 +686,9 @@ async function run(lat, lng) {
 // ─────────────────────────────────────────────────────────────────────────────
 // ANIMATION LOOP
 // ─────────────────────────────────────────────────────────────────────────────
-const fpsLimit = 1000 / 60;
-let lastFrameTime = 0, time = 0, frame = 0;
-(function animate(now) {
+let time = 0, frame = 0;
+(function animate() {
     requestAnimationFrame(animate);
-    if (fpsLimit && now - lastFrameTime < fpsLimit) return;
-    lastFrameTime = now;
     time += 0.016; frame++;
     if (running && pixelData && frame % STEP_INTERVAL === 0) updateParticles();
     controls.update();
