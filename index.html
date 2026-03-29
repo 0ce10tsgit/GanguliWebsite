@@ -192,15 +192,15 @@ function status(msg) { $status.textContent = msg; }
 const container = document.getElementById('container');
 const scene     = new THREE.Scene();
 scene.background = new THREE.Color(20/255, 5/255, 7/255);
-scene.fog = null;
+scene.fog = new THREE.FogExp2(new THREE.Color(20/255, 5/255, 7/255), 0.006);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
 // pitch=69°, dist=62
 camera.position.set(62*Math.cos(69*Math.PI/180), 62*Math.sin(69*Math.PI/180), 62*Math.cos(69*Math.PI/180));
 
-const renderer = new THREE.WebGLRenderer({ antialias: false });
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(0.6);
+renderer.setPixelRatio(0.75);
 container.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -211,7 +211,9 @@ controls.enableRotate = false;
 controls.maxPolarAngle = Math.PI / 2.05; controls.minPolarAngle = 0.1;
 
 // Ground planes
-
+const mapMat   = new THREE.MeshBasicMaterial({ color: 0x080810 });
+const mapPlane = new THREE.Mesh(new THREE.PlaneGeometry(VISUAL_GROUND_SIZE, VISUAL_GROUND_SIZE), mapMat);
+mapPlane.rotation.x = -Math.PI / 2; mapPlane.position.y = -0.01; scene.add(mapPlane);
 
 const innerMapMat   = new THREE.MeshBasicMaterial({ color: 0x080810 });
 const innerMapPlane = new THREE.Mesh(new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE), innerMapMat);
@@ -249,6 +251,17 @@ async function fetchTiles(lat, lng, zoom) {
 
     const results = await Promise.all(tiles);
 
+    // Outer texture: all tiles downsampled to 1024×1024
+    const outerCanvas = document.createElement('canvas');
+    outerCanvas.width = outerCanvas.height = 1024;
+    const oCtx = outerCanvas.getContext('2d');
+    oCtx.imageSmoothingEnabled = true;
+    const loTile = 1024 / VISUAL_TILE_GRID;
+    for (const { img, tx, ty } of results) {
+        const gx = tx - center.x + vhalf, gy = ty - center.y + vhalf;
+        oCtx.drawImage(img, gx * loTile, gy * loTile, loTile, loTile);
+    }
+
     // Inner texture: center 5×5 tiles at full res, cropped to mask area (CANVAS_PX × CANVAS_PX)
     const innerSpan = (INNER_HALF * 2 + 1) * TILE_SIZE; // 1280px
     const tempCanvas = document.createElement('canvas');
@@ -267,7 +280,7 @@ async function fetchTiles(lat, lng, zoom) {
     const iCtx = innerCanvas.getContext('2d');
     iCtx.drawImage(tempCanvas, tempMaskOffset, tempMaskOffset, CANVAS_PX, CANVAS_PX, 0, 0, CANVAS_PX, CANVAS_PX);
 
-    return { innerCanvas, maskCtx: iCtx };
+    return { outerCanvas, innerCanvas, maskCtx: iCtx };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -587,12 +600,15 @@ function updateParticles() {
 // ─────────────────────────────────────────────────────────────────────────────
 // MAP TEXTURE
 // ─────────────────────────────────────────────────────────────────────────────
-let activeInnerTex = null;
+let activeTex = null, activeInnerTex = null;
 let tileCanvasRef = null;
 
-function applyMapTexture(innerCanvas) {
+function applyMapTexture(outerCanvas, innerCanvas) {
+    if (activeTex) activeTex.dispose();
     if (activeInnerTex) activeInnerTex.dispose();
+    activeTex = new THREE.CanvasTexture(outerCanvas);
     activeInnerTex = new THREE.CanvasTexture(innerCanvas);
+    mapMat.map = activeTex; mapMat.color.set(0xffffff); mapMat.needsUpdate = true;
     innerMapMat.map = activeInnerTex; innerMapMat.color.set(0xffffff); innerMapMat.needsUpdate = true;
 }
 
@@ -608,9 +624,9 @@ async function run(lat, lng) {
     pixelData = null;
 
     try {
-        const { innerCanvas, maskCtx } = await fetchTiles(lat, lng, zoom);
-        tileCanvasRef = innerCanvas;
-        applyMapTexture(innerCanvas);
+        const { outerCanvas, innerCanvas, maskCtx } = await fetchTiles(lat, lng, zoom);
+        tileCanvasRef = outerCanvas;
+        applyMapTexture(outerCanvas, innerCanvas);
         status('Tiles loaded. Reading pixels…');
 
         try {
