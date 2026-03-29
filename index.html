@@ -104,7 +104,7 @@
     <span id="city"></span>
     <button id="city-info-btn" title="About this location">?</button>
 </div>
-<div id="city-tooltip">Your approximate location is detected via IP address, if you are using a VPN or special network this may be dead wrong</div>
+<div id="city-tooltip">Your approximate location is geocoded via IP address, if you are using a VPN or special network this may be dead wrong</div>
 
 <div id="right-panel">
     <img src="IMG_0976.jpeg" alt="Oyon Ganguli">
@@ -150,8 +150,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const TILE_SIZE        = 256;
 const TILE_GRID        = 4;                                      // mask: 3×3 tiles
 const CANVAS_PX        = TILE_GRID * TILE_SIZE;                  // 768 — road mask area
-const VISUAL_TILE_GRID = 19;                                     // visual: 19×19 tiles
-const VISUAL_PX        = VISUAL_TILE_GRID * TILE_SIZE;           // 1792
+const VISUAL_TILE_GRID = 16;                                      // visual: 9×9 tiles
+const VISUAL_PX        = VISUAL_TILE_GRID * TILE_SIZE;           // 2304
 const MASK_OFFSET      = ((VISUAL_TILE_GRID - TILE_GRID) / 2) * TILE_SIZE; // 512
 const SCENE_SCALE      = 0.052;
 const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units (particles)
@@ -161,8 +161,8 @@ const ACCENT         = 0xe64f4f;
 const PARTICLE_COUNT  = 40;
 const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
 const TRAIL_LEN       = 28;
-const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
-const STEP_INTERVAL   = 7;    // only step particles every N frames (slows them down)
+const STEPS_PER_FRAME = 1;    // canvas pixels advanced per step
+const STEP_INTERVAL   = 5;    // only step particles every N frames (slows them down)
 const SPAWN_RADIUS    = 120;  // canvas px from center to sample spawn pool from
 const LIFETIME_MIN    = 300;  // frames before forced respawn (~5s)
 const LIFETIME_MAX    = 1000;  // frames before forced respawn (~10s)
@@ -190,12 +190,12 @@ scene.background = new THREE.Color(20/255, 5/255, 7/255);
 scene.fog = new THREE.FogExp2(new THREE.Color(20/255, 5/255, 7/255), 0.006);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
-// pitch=64°, dist=62
-camera.position.set(62*Math.cos(64*Math.PI/180), 62*Math.sin(64*Math.PI/180), 62*Math.cos(64*Math.PI/180));
+// pitch=69°, dist=62
+camera.position.set(62*Math.cos(69*Math.PI/180), 62*Math.sin(69*Math.PI/180), 62*Math.cos(69*Math.PI/180));
 
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(1);
+renderer.setPixelRatio(0.75);
 container.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -656,9 +656,12 @@ async function run(lat, lng) {
 // ─────────────────────────────────────────────────────────────────────────────
 // ANIMATION LOOP
 // ─────────────────────────────────────────────────────────────────────────────
-let time = 0, frame = 0;
-(function animate() {
+const fpsLimit = 1000 / 60;
+let lastFrameTime = 0, time = 0, frame = 0;
+(function animate(now) {
     requestAnimationFrame(animate);
+    if (fpsLimit && now - lastFrameTime < fpsLimit) return;
+    lastFrameTime = now;
     time += 0.016; frame++;
     if (running && pixelData && frame % STEP_INTERVAL === 0) updateParticles();
     controls.update();
