@@ -34,14 +34,45 @@
 <div id="container"></div>
 <div id="ui">
     <div class="row">
-        <label>Lat</label><input id="lat-in" type="number" step="0.001" value="40.758">
-        <label>Lng</label><input id="lng-in" type="number" step="0.001" value="-73.985">
+        <label>Lat</label><input id="lat-in" type="number" step="0.001" value="42.334">
+        <label>Lng</label><input id="lng-in" type="number" step="0.001" value="-71.045">
         <button onclick="restart()">Go</button>
     </div>
     <div class="row">
         <label>Zoom</label>
-        <input id="zoom-in" type="range" min="13" max="16" step="1" value="15">
-        <span id="zoom-val">15</span>
+        <input id="zoom-in" type="range" min="13" max="16" step="1" value="14">
+        <span id="zoom-val">14</span>
+    </div>
+    <div class="row">
+        <label>Zoom</label>
+        <input id="zoom-dist" type="range" min="10" max="120" step="1" value="61">
+        <span id="zoom-dist-val">61</span>
+
+    </div>
+    <div class="row">
+        <label>Pitch</label>
+        <input id="az-in" type="range" min="5" max="85" step="1" value="62">
+        <span id="az-val">62</span>
+    </div>
+    <div class="row">
+        <label>Fog</label>
+        <input id="fog-in" type="range" min="0" max="30" step="1" value="8">
+        <span id="fog-val">8</span>
+    </div>
+    <div class="row">
+        <label style="color:#f66">R</label>
+        <input id="fog-r" type="range" min="0" max="255" step="1" value="99">
+        <span id="fog-r-val">99</span>
+    </div>
+    <div class="row">
+        <label style="color:#6f6">G</label>
+        <input id="fog-g" type="range" min="0" max="255" step="1" value="58">
+        <span id="fog-g-val">58</span>
+    </div>
+    <div class="row">
+        <label style="color:#88f">B</label>
+        <input id="fog-b" type="range" min="0" max="255" step="1" value="99">
+        <span id="fog-b-val">99</span>
     </div>
     <div class="row">
         <label style="color:#555">Debug</label>
@@ -50,7 +81,7 @@
     </div>
     <div id="status">Initializing…</div>
     <div id="debug-wrap">
-        <span>red = road mask (grey br 16–42, dilated 2px)</span>
+        <span>green = road mask (grey br 16–42, dilated 2px)</span>
         <canvas id="debug-canvas" width="192" height="192"></canvas>
     </div>
 </div>
@@ -70,21 +101,26 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
-const TILE_SIZE      = 256;
-const TILE_GRID      = 3;
-const CANVAS_PX      = TILE_GRID * TILE_SIZE;        // 768
-const SCENE_SCALE    = 0.052;
-const GROUND_SIZE    = CANVAS_PX * SCENE_SCALE;      // ≈ 40 units
+const TILE_SIZE        = 256;
+const TILE_GRID        = 4;                                      // mask: 3×3 tiles
+const CANVAS_PX        = TILE_GRID * TILE_SIZE;                  // 768 — road mask area
+const VISUAL_TILE_GRID = 19;                                     // visual: 19×19 tiles
+const VISUAL_PX        = VISUAL_TILE_GRID * TILE_SIZE;           // 1792
+const MASK_OFFSET      = ((VISUAL_TILE_GRID - TILE_GRID) / 2) * TILE_SIZE; // 512
+const SCENE_SCALE      = 0.052;
+const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units (particles)
+const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;             // ≈ 93 units (map plane)
 const ACCENT         = 0xe64f4f;
 
-const PARTICLE_COUNT  = 50;
+const PARTICLE_COUNT  = 80;
+const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
 const TRAIL_LEN       = 28;
-const STEPS_PER_FRAME = 1;    // canvas pixels advanced per step
-const STEP_INTERVAL   = 4;    // only step particles every N frames (slows them down)
+const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
+const STEP_INTERVAL   = 5;    // only step particles every N frames (slows them down)
 const SPAWN_RADIUS    = 120;  // canvas px from center to sample spawn pool from
 const LIFETIME_MIN    = 300;  // frames before forced respawn (~5s)
-const LIFETIME_MAX    = 600;  // frames before forced respawn (~10s)
-const LOOP_MEMORY     = 60;   // how many recent pixels to remember per particle
+const LIFETIME_MAX    = 1000;  // frames before forced respawn (~10s)
+const LOOP_MEMORY     = 50;   // how many recent pixels to remember per particle
 
 // Road pixel: #191919 = RGB(25,25,25) — confirmed from tile scan
 const ROAD_R = 25, ROAD_G = 25, ROAD_B = 25;
@@ -101,8 +137,41 @@ const $zoomVal = document.getElementById('zoom-val');
 const $dbgTog  = document.getElementById('debug-toggle');
 const $dbgWrap = document.getElementById('debug-wrap');
 const $dbgCvs  = document.getElementById('debug-canvas');
-$zoom.oninput      = () => $zoomVal.textContent = $zoom.value;
-$dbgTog.onchange   = () => { $dbgWrap.style.display = $dbgTog.checked ? 'block' : 'none'; };
+$zoom.oninput = () => $zoomVal.textContent = $zoom.value;
+$dbgTog.onchange = () => { if (tileCanvasRef) applyMapTexture(tileCanvasRef, $dbgTog.checked); };
+const $fogIn = document.getElementById('fog-in');
+const $fogVal = document.getElementById('fog-val');
+$fogIn.oninput = () => { $fogVal.textContent = $fogIn.value; scene.fog.density = $fogIn.value / 1000; };
+const $fogR = document.getElementById('fog-r'), $fogRV = document.getElementById('fog-r-val');
+const $fogG = document.getElementById('fog-g'), $fogGV = document.getElementById('fog-g-val');
+const $fogB = document.getElementById('fog-b'), $fogBV = document.getElementById('fog-b-val');
+function updateFogColor() {
+    const c = new THREE.Color($fogR.value/255, $fogG.value/255, $fogB.value/255);
+    scene.fog.color.set(c); scene.background.set(c);
+    $fogRV.textContent = $fogR.value; $fogGV.textContent = $fogG.value; $fogBV.textContent = $fogB.value;
+}
+$fogR.oninput = $fogG.oninput = $fogB.oninput = updateFogColor;
+const $zoomDist    = document.getElementById('zoom-dist');
+const $zoomDistVal = document.getElementById('zoom-dist-val');
+let camDist = 61;
+$zoomDist.oninput = () => {
+    camDist = parseFloat($zoomDist.value);
+    $zoomDistVal.textContent = $zoomDist.value;
+    const dir = camera.position.clone().normalize();
+    camera.position.copy(dir.multiplyScalar(camDist));
+    controls.update();
+};
+
+const $azIn  = document.getElementById('az-in');
+const $azVal = document.getElementById('az-val');
+$azIn.oninput = () => {
+    $azVal.textContent = $azIn.value;
+    const pitch = $azIn.value * Math.PI / 180;
+    const h = camDist * Math.cos(pitch);
+    camera.position.set(h, camDist * Math.sin(pitch), h);
+    camera.lookAt(0, 0, 0);
+    controls.update();
+};
 function status(msg) { $status.textContent = msg; }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,32 +179,35 @@ function status(msg) { $status.textContent = msg; }
 // ─────────────────────────────────────────────────────────────────────────────
 const container = document.getElementById('container');
 const scene     = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
-scene.fog = new THREE.FogExp2(0x000000, 0.018);
+scene.background = new THREE.Color(99/255, 58/255, 99/255);
+scene.fog = new THREE.FogExp2(new THREE.Color(99/255, 58/255, 99/255), 0.008);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
-camera.position.set(22, 18, 22);
+// pitch=62°, dist=61
+camera.position.set(61*Math.cos(62*Math.PI/180), 61*Math.sin(62*Math.PI/180), 61*Math.cos(62*Math.PI/180));
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setPixelRatio(1);
 container.appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = 0.05;
 controls.autoRotate = true; controls.autoRotateSpeed = 0.35;
-controls.enableZoom = true; controls.enablePan = false;
+controls.enableZoom = false; controls.enablePan = false;
+controls.enableRotate = true;
 controls.maxPolarAngle = Math.PI / 2.05; controls.minPolarAngle = 0.1;
 
 // Ground planes
 const bgPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(400, 400),
-    new THREE.MeshBasicMaterial({ color: 0x060608 })
+    new THREE.MeshBasicMaterial({ color: 0x03010a })
 );
 bgPlane.rotation.x = -Math.PI / 2; bgPlane.position.y = -0.05; scene.add(bgPlane);
 
+
 const mapMat   = new THREE.MeshBasicMaterial({ color: 0x080810 });
-const mapPlane = new THREE.Mesh(new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE), mapMat);
+const mapPlane = new THREE.Mesh(new THREE.PlaneGeometry(VISUAL_GROUND_SIZE, VISUAL_GROUND_SIZE), mapMat);
 mapPlane.rotation.x = -Math.PI / 2; mapPlane.position.y = -0.01; scene.add(mapPlane);
 
 // Marker ring
@@ -161,11 +233,13 @@ function latLngToTile(lat, lng, zoom) {
 }
 
 async function fetchTiles(lat, lng, zoom) {
-    const center = latLngToTile(lat, lng, zoom);
-    const half   = Math.floor(TILE_GRID / 2);
-    const canvas = document.createElement('canvas');
-    canvas.width = canvas.height = CANVAS_PX;
-    const ctx = canvas.getContext('2d');
+    const center  = latLngToTile(lat, lng, zoom);
+    const vhalf   = Math.floor(VISUAL_TILE_GRID / 2);
+
+    // Full 7×7 visual canvas
+    const vCanvas = document.createElement('canvas');
+    vCanvas.width = vCanvas.height = VISUAL_PX;
+    const vCtx = vCanvas.getContext('2d');
 
     const load = (tx, ty) => new Promise((res, rej) => {
         const img = new Image(); img.crossOrigin = 'anonymous';
@@ -174,15 +248,21 @@ async function fetchTiles(lat, lng, zoom) {
     });
 
     const tiles = [];
-    for (let dy = -half; dy <= half; dy++)
-        for (let dx = -half; dx <= half; dx++)
+    for (let dy = -vhalf; dy <= vhalf; dy++)
+        for (let dx = -vhalf; dx <= vhalf; dx++)
             tiles.push(load(center.x+dx, center.y+dy));
 
     const results = await Promise.all(tiles);
     for (const { img, tx, ty } of results)
-        ctx.drawImage(img, (tx-center.x+half)*TILE_SIZE, (ty-center.y+half)*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        vCtx.drawImage(img, (tx-center.x+vhalf)*TILE_SIZE, (ty-center.y+vhalf)*TILE_SIZE, TILE_SIZE, TILE_SIZE);
 
-    return { ctx, canvas };
+    // Extract only center 3×3 for mask — no extra compute
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = maskCanvas.height = CANVAS_PX;
+    const mCtx = maskCanvas.getContext('2d');
+    mCtx.drawImage(vCanvas, MASK_OFFSET, MASK_OFFSET, CANVAS_PX, CANVAS_PX, 0, 0, CANVAS_PX, CANVAS_PX);
+
+    return { visualCanvas: vCanvas, maskCtx: mCtx };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -190,6 +270,7 @@ async function fetchTiles(lat, lng, zoom) {
 // ─────────────────────────────────────────────────────────────────────────────
 let pixelData  = null;        // raw Uint8ClampedArray from getImageData
 let roadMask   = null;        // Uint8Array: 1 = road (dilated), 0 = not road
+let rawRoadMask = null;       // Uint8Array: 1 = actual road color (pre-dilation)
 let nearCenterPixels = [];    // road pixels within SPAWN_RADIUS of canvas center
 
 function isRoad(px, py) {
@@ -209,8 +290,9 @@ function buildRoadMask() {
         const r = pixelData[p], g = pixelData[p+1], b = pixelData[p+2];
         const br = (r + g + b) / 3;
         const spread = Math.max(r, g, b) - Math.min(r, g, b);
-        if (br >= 16 && br <= 42 && spread <= 10) base[i] = 1;
+        if (br >= 18 && br <= 34 && spread <= 5) base[i] = 1;
     }
+    rawRoadMask = base;
     // Two rounds of dilation to close gaps
     roadMask = new Uint8Array(size);
     const tmp  = new Uint8Array(size);
@@ -317,53 +399,66 @@ function pixelToScene(px, py) {
 // PARTICLE SYSTEM
 // ─────────────────────────────────────────────────────────────────────────────
 let headMesh = null, headPos = null;
-let trailLines = [], trailPos = [], trailCol = [];
-let particles  = [];   // { px, py, prevPx, prevPy, trail: [{x,z}] }
+let trailMesh = null;
+let trailPos = [], trailCol = [];
+let particles  = [];
+let spawnPoints = []; // N random road intersections spread across the mask
 
-function randomRoadPixel() {
-    const pool = nearCenterPixels.length ? nearCenterPixels : knownRoadPixels;
-    if (!pool.length) return [centerRoadPx, centerRoadPy];
-    return pool[Math.floor(Math.random() * pool.length)];
+function buildSpawnPoints() {
+    // Only spawn on actual road-colored pixels (pre-dilation), prefer intersections
+    const rawPool = knownRoadPixels.filter(([px, py]) =>
+        rawRoadMask[py * CANVAS_PX + px] === 1 && !isKillColor(px, py));
+    const src2 = rawPool.length ? rawPool : knownRoadPixels;
+    const pool = src2.filter(([px, py]) => roadNeighbors(px, py, -1, -1).length >= 3 && !isKillColor(px, py));
+    const src  = pool.length ? pool : src2;
+    spawnPoints = [];
+    // Shuffle a copy and pick evenly spaced entries for distribution
+    const step = Math.max(1, Math.floor(src.length / SPAWN_POINT_COUNT));
+    for (let i = 0; i < SPAWN_POINT_COUNT && i * step < src.length; i++) {
+        spawnPoints.push(src[i * step]);
+    }
+    if (!spawnPoints.length) spawnPoints.push([centerRoadPx, centerRoadPy]);
 }
 
-function makeParticle(ageOffset) {
-    const spx = centerRoadPx, spy = centerRoadPy;
-    const p = {
-        px: spx, py: spy, prevPx: -1, prevPy: -1,
-        spawnPx: spx, spawnPy: spy,
-        trail: [],
-        visited: new Set(),
-        age: ageOffset || 0,
-        maxAge: LIFETIME_MIN + Math.floor(Math.random() * (LIFETIME_MAX - LIFETIME_MIN)),
-    };
+function randomSpawnPoint() {
+    return spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
+}
+
+function initAtSpawn(p, spx, spy, ageOffset) {
+    p.px = spx; p.py = spy; p.prevPx = -1; p.prevPy = -1;
+    p.spawnPx = spx; p.spawnPy = spy;
+    p.trail = []; p.trailHead = 0; p.trailFill = 0;
+    p.visited = new Set();
     p.visited.add(spy * CANVAS_PX + spx);
+    p.age = ageOffset || 0;
+    p.maxAge = LIFETIME_MIN + Math.floor(Math.random() * (LIFETIME_MAX - LIFETIME_MIN));
     const dirs = roadNeighbors(spx, spy, -1, -1);
     if (dirs.length) {
         const d = dirs[Math.floor(Math.random() * dirs.length)];
         p.prevPx = spx - (d[0] - spx);
         p.prevPy = spy - (d[1] - spy);
     }
+}
+
+function makeParticle(ageOffset) {
+    const [spx, spy] = randomSpawnPoint();
+    const p = { px: 0, py: 0, prevPx: -1, prevPy: -1, spawnPx: 0, spawnPy: 0, trail: [], visited: new Set(), age: 0, maxAge: 0 };
+    initAtSpawn(p, spx, spy, ageOffset);
     return p;
 }
 
-function spawnParticle(ageOffset) {
-    return makeParticle(ageOffset);
-}
+function spawnParticle(ageOffset) { return makeParticle(ageOffset); }
 
 function respawnParticle(p) {
-    const spx = centerRoadPx, spy = centerRoadPy;
-    p.px = spx; p.py = spy; p.prevPx = -1; p.prevPy = -1;
-    p.spawnPx = spx; p.spawnPy = spy;
-    p.trail = [];
-    p.visited = new Set();
-    p.visited.add(spy * CANVAS_PX + spx);
-    p.age = 0;
-    p.maxAge = LIFETIME_MIN + Math.floor(Math.random() * (LIFETIME_MAX - LIFETIME_MIN));
-    const dirs = roadNeighbors(spx, spy, -1, -1);
-    if (dirs.length) {
-        const d = dirs[Math.floor(Math.random() * dirs.length)];
-        p.prevPx = spx - (d[0] - spx); p.prevPy = spy - (d[1] - spy);
-    }
+    const [spx, spy] = randomSpawnPoint();
+    initAtSpawn(p, spx, spy, 0);
+}
+
+function isKillColor(px, py) {
+    if (!pixelData || px < 0 || py < 0 || px >= CANVAS_PX || py >= CANVAS_PX) return false;
+    const i = (py * CANVAS_PX + px) * 4;
+    const r = pixelData[i], g = pixelData[i+1], b = pixelData[i+2];
+    return Math.abs(r - 108) <= 8 && Math.abs(g - 108) <= 8 && Math.abs(b - 108) <= 8;
 }
 
 function stepParticle(p) {
@@ -376,6 +471,12 @@ function stepParticle(p) {
     }
 
     for (let s = 0; s < STEPS_PER_FRAME; s++) {
+        // Kill if on #6c6c6c (e.g. highway/overpass artifact)
+        if (isKillColor(p.px, p.py)) {
+            respawnParticle(p);
+            break;
+        }
+
         // Mark current pixel visited (rolling window)
         const curKey = p.py * CANVAS_PX + p.px;
         p.visited.add(curKey);
@@ -393,35 +494,47 @@ function stepParticle(p) {
         p.px = next[0]; p.py = next[1];
     }
 
-    // Record scene position for trail
+    // Record scene position into ring buffer
     const pos = pixelToScene(p.px, p.py);
-    p.trail.push(pos);
-    if (p.trail.length > TRAIL_LEN) p.trail.shift();
+    p.trailBuf[p.trailHead * 2]     = pos.x;
+    p.trailBuf[p.trailHead * 2 + 1] = pos.z;
+    p.trailHead = (p.trailHead + 1) % TRAIL_LEN;
+    if (p.trailFill < TRAIL_LEN) p.trailFill++;
 }
 
 function initParticleSystem() {
     // Dispose old
-    for (const ln of trailLines) { ln.geometry.dispose(); ln.material.dispose(); trailGroup.remove(ln); }
-    trailLines = []; trailPos = []; trailCol = [];
-    if (headMesh) { headMesh.geometry.dispose(); headMesh.material.dispose(); scene.remove(headMesh); headMesh = null; }
-    particles = [];
+    if (trailMesh) { trailMesh.geometry.dispose(); trailMesh.material.dispose(); trailGroup.remove(trailMesh); trailMesh = null; }
+    if (headMesh)  { headMesh.geometry.dispose();  headMesh.material.dispose();  scene.remove(headMesh); headMesh = null; }
+    particles = []; trailPos = []; trailCol = [];
 
+    // Single geometry for ALL trails — one draw call instead of PARTICLE_COUNT draw calls
+    const totalVerts = PARTICLE_COUNT * TRAIL_LEN;
+    const allPos = new Float32Array(totalVerts * 3);
+    const allCol = new Float32Array(totalVerts * 3);
     headPos = new Float32Array(PARTICLE_COUNT * 3);
 
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-        // Stagger initial ages so particles don't all respawn at once
         const ageOffset = Math.floor((i / PARTICLE_COUNT) * LIFETIME_MIN);
-        particles.push(spawnParticle(ageOffset));
-
-        const pb = new Float32Array(TRAIL_LEN * 3);
-        const cb = new Float32Array(TRAIL_LEN * 3);
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.BufferAttribute(pb, 3));
-        geo.setAttribute('color',    new THREE.BufferAttribute(cb, 3));
-        const ln = new THREE.Line(geo, new THREE.LineBasicMaterial({ vertexColors: true }));
-        ln.frustumCulled = false;
-        trailGroup.add(ln); trailLines.push(ln); trailPos.push(pb); trailCol.push(cb);
+        const p = spawnParticle(ageOffset);
+        // Ring buffer instead of array with shift()
+        p.trailBuf = new Float32Array(TRAIL_LEN * 2); // x,z pairs
+        p.trailHead = 0;
+        p.trailFill = 0;
+        particles.push(p);
+        trailPos.push(allPos.subarray(i * TRAIL_LEN * 3, (i+1) * TRAIL_LEN * 3));
+        trailCol.push(allCol.subarray(i * TRAIL_LEN * 3, (i+1) * TRAIL_LEN * 3));
     }
+
+    const trailGeo = new THREE.BufferGeometry();
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(allPos, 3));
+    trailGeo.setAttribute('color',    new THREE.BufferAttribute(allCol, 3));
+    // Draw as points so we don't need per-particle line segments
+    trailMesh = new THREE.Points(trailGeo, new THREE.PointsMaterial({
+        vertexColors: true, size: 0.12, sizeAttenuation: true, transparent: true, opacity: 0.85,
+    }));
+    trailMesh.frustumCulled = false;
+    trailGroup.add(trailMesh);
 
     const hGeo = new THREE.BufferGeometry();
     hGeo.setAttribute('position', new THREE.BufferAttribute(headPos, 3));
@@ -441,52 +554,50 @@ function updateParticles() {
         const pos = pixelToScene(p.px, p.py);
         headPos[i*3] = pos.x; headPos[i*3+1] = 0.08; headPos[i*3+2] = pos.z;
 
-        // Trail: j=0 oldest (dark), j=TRAIL_LEN-1 newest (bright red)
+        // Trail from ring buffer — oldest to newest
         const pb = trailPos[i], cb = trailCol[i];
-        const tLen = p.trail.length, pad = TRAIL_LEN - tLen;
         for (let j = 0; j < TRAIL_LEN; j++) {
-            const pt = j < pad ? (p.trail[0] || pos) : p.trail[j - pad];
-            pb[j*3] = pt.x; pb[j*3+1] = 0.06; pb[j*3+2] = pt.z;
+            const age = j - (TRAIL_LEN - p.trailFill); // negative = not yet filled
+            let x, z;
+            if (age < 0) {
+                x = pos.x; z = pos.z;
+            } else {
+                const idx = (p.trailHead - p.trailFill + age + TRAIL_LEN) % TRAIL_LEN;
+                x = p.trailBuf[idx * 2]; z = p.trailBuf[idx * 2 + 1];
+            }
+            pb[j*3] = x; pb[j*3+1] = 0.06; pb[j*3+2] = z;
             const lum = Math.pow(j / (TRAIL_LEN - 1), 2);
             cb[j*3] = 0.9*lum; cb[j*3+1] = 0.07*lum*lum; cb[j*3+2] = 0.07*lum*lum;
         }
-        const geo = trailLines[i].geometry;
-        geo.attributes.position.needsUpdate = true;
-        geo.attributes.color.needsUpdate    = true;
     }
+    if (trailMesh) { trailMesh.geometry.attributes.position.needsUpdate = true; trailMesh.geometry.attributes.color.needsUpdate = true; }
     if (headMesh) headMesh.geometry.attributes.position.needsUpdate = true;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DEBUG CANVAS
-// ─────────────────────────────────────────────────────────────────────────────
-function drawDebug(tileCanvas) {
-    const dCtx  = $dbgCvs.getContext('2d');
-    const scale = 192 / CANVAS_PX;
-    dCtx.drawImage(tileCanvas, 0, 0, 192, 192);
-    const id = dCtx.getImageData(0, 0, 192, 192), d = id.data;
-    for (let dy = 0; dy < 192; dy++) {
-        for (let dx = 0; dx < 192; dx++) {
-            const sx = Math.floor(dx / scale), sy = Math.floor(dy / scale);
-            if (isRoad(sx, sy)) {
-                const i = (dy*192+dx)*4;
-                d[i]=220; d[i+1]=50; d[i+2]=50; d[i+3]=200;
-            }
-        }
-    }
-    dCtx.putImageData(id, 0, 0);
-    dCtx.strokeStyle = '#e64f4f55'; dCtx.lineWidth = 1;
-    dCtx.beginPath(); dCtx.moveTo(96,0); dCtx.lineTo(96,192); dCtx.stroke();
-    dCtx.beginPath(); dCtx.moveTo(0,96); dCtx.lineTo(192,96); dCtx.stroke();
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MAP TEXTURE
 // ─────────────────────────────────────────────────────────────────────────────
 let activeTex = null;
-function applyMapTexture(canvas) {
+let tileCanvasRef = null; // original tiles, unmodified
+
+function applyMapTexture(canvas, withMaskOverlay) {
     if (activeTex) activeTex.dispose();
-    activeTex = new THREE.CanvasTexture(canvas);
+    const oc = document.createElement('canvas');
+    oc.width = oc.height = VISUAL_PX;
+    const octx = oc.getContext('2d');
+    octx.drawImage(canvas, 0, 0);
+    if (withMaskOverlay && roadMask) {
+        // Mask is center 3×3 — offset it into the 7×7 visual canvas
+        const id = octx.getImageData(MASK_OFFSET, MASK_OFFSET, CANVAS_PX, CANVAS_PX);
+        const d = id.data;
+        for (let i = 0; i < CANVAS_PX * CANVAS_PX; i++) {
+            if (roadMask[i]) { d[i*4]=0; d[i*4+1]=255; d[i*4+2]=0; d[i*4+3]=255; }
+        }
+        octx.putImageData(id, MASK_OFFSET, MASK_OFFSET);
+    }
+    activeTex = new THREE.CanvasTexture(oc);
+    activeTex.needsUpdate = true;
     mapMat.map = activeTex; mapMat.color.set(0xffffff); mapMat.needsUpdate = true;
 }
 
@@ -502,13 +613,15 @@ async function run(lat, lng) {
     pixelData = null;
 
     try {
-        const { ctx, canvas } = await fetchTiles(lat, lng, zoom);
-        applyMapTexture(canvas);
+        const { visualCanvas, maskCtx } = await fetchTiles(lat, lng, zoom);
+        tileCanvasRef = visualCanvas;
+        applyMapTexture(visualCanvas);
         status('Tiles loaded. Reading pixels…');
 
         try {
-            pixelData = ctx.getImageData(0, 0, CANVAS_PX, CANVAS_PX).data;
-            buildRoadMask();  // exact match + 1px dilation to close intersection gaps
+            pixelData = maskCtx.getImageData(0, 0, CANVAS_PX, CANVAS_PX).data;
+            buildRoadMask();
+            if ($dbgTog.checked) applyMapTexture(visualCanvas, true);
 
             const ci  = ((CANVAS_PX >> 1) * CANVAS_PX + (CANVAS_PX >> 1)) * 4;
             const centerColor = `rgb(${pixelData[ci]},${pixelData[ci+1]},${pixelData[ci+2]})`;
@@ -540,12 +653,9 @@ async function run(lat, lng) {
                 return;
             }
 
-            const neighbors = roadNeighbors(centerRoadPx, centerRoadPy, -1, -1);
-            const si = (centerRoadPy * CANVAS_PX + centerRoadPx) * 4;
-            const spawnHex = '#' + [pixelData[si],pixelData[si+1],pixelData[si+2]].map(v=>v.toString(16).padStart(2,'0')).join('');
-            console.log(`[road-particles] spawn: ${spawnHex} at (${centerRoadPx},${centerRoadPy}) · ${neighbors.length} neighbors`);
+            buildSpawnPoints();
+            console.log(`[road-particles] ${spawnPoints.length} spawn points across mask`);
 
-            drawDebug(canvas);
             initParticleSystem();
             running = true;
             status(`Live — ${knownRoadPixels.length} road pixels, ${PARTICLE_COUNT} particles`);
@@ -569,7 +679,8 @@ let time = 0, frame = 0;
     const s = 1 + Math.sin(time*1.5)*0.22;
     pulseRing.scale.set(s, s, 1);
     pulseMat.opacity = 0.22 - Math.sin(time*1.5)*0.1;
-    if (running && pixelData && frame % STEP_INTERVAL === 0) updateParticles();
+
+if (running && pixelData && frame % STEP_INTERVAL === 0) updateParticles();
     controls.update();
     renderer.render(scene, camera);
 })();
@@ -587,7 +698,10 @@ function restart() {
 }
 window.restart = restart;
 
-run(40.758, -73.985);
+fetch('/location.php')
+    .then(r => r.json())
+    .then(d => run(d.lat, d.lon))
+    .catch(() => run(42.33418545905304, -71.0445458583231));
 </script>
 </body>
 </html>
