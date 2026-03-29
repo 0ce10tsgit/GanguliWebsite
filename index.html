@@ -211,11 +211,6 @@ controls.enableRotate = false;
 controls.maxPolarAngle = Math.PI / 2.05; controls.minPolarAngle = 0.1;
 
 // Ground planes
-const bgPlane = new THREE.Mesh(
-    new THREE.PlaneGeometry(400, 400),
-    new THREE.MeshBasicMaterial({ color: 0x03010a })
-);
-bgPlane.rotation.x = -Math.PI / 2; bgPlane.position.y = -0.05; scene.add(bgPlane);
 
 
 const mapMat   = new THREE.MeshBasicMaterial({ color: 0x080810 });
@@ -561,7 +556,7 @@ function initParticleSystem() {
     trailGeo.setAttribute('color',    new THREE.BufferAttribute(allCol, 3));
     // Draw as points so we don't need per-particle line segments
     trailMesh = new THREE.Points(trailGeo, new THREE.PointsMaterial({
-        vertexColors: true, size: 0.12, sizeAttenuation: true,
+        vertexColors: true, size: 2, sizeAttenuation: false,
     }));
     trailMesh.frustumCulled = false;
     trailGroup.add(trailMesh);
@@ -569,7 +564,7 @@ function initParticleSystem() {
     const hGeo = new THREE.BufferGeometry();
     hGeo.setAttribute('position', new THREE.BufferAttribute(headPos, 3));
     headMesh = new THREE.Points(hGeo, new THREE.PointsMaterial({
-        color: ACCENT, size: 0.5, sizeAttenuation: true,
+        color: ACCENT, size: 6, sizeAttenuation: false,
     }));
     headMesh.frustumCulled = false;
     scene.add(headMesh);
