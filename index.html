@@ -191,7 +191,7 @@ function status(msg) { $status.textContent = msg; }
 const container = document.getElementById('container');
 const scene     = new THREE.Scene();
 scene.background = new THREE.Color(20/255, 5/255, 7/255);
-scene.fog = null;
+scene.fog = new THREE.FogExp2(new THREE.Color(20/255, 5/255, 7/255), 0.006);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
 // pitch=69°, dist=62
@@ -431,6 +431,10 @@ let trailPos = [], trailCol = [];
 let particles  = [];
 let spawnPoints = []; // N random road intersections spread across the mask
 
+// Precomputed luminance LUT — avoids Math.pow() per trail vertex per frame
+const LUM_LUT = new Float32Array(TRAIL_LEN);
+for (let j = 0; j < TRAIL_LEN; j++) LUM_LUT[j] = Math.pow(j / (TRAIL_LEN - 1), 2);
+
 function buildSpawnPoints() {
     // Only spawn on actual road-colored pixels (pre-dilation), prefer intersections
     const rawPool = knownRoadPixels.filter(([px, py]) =>
@@ -454,7 +458,7 @@ function randomSpawnPoint() {
 function initAtSpawn(p, spx, spy, ageOffset) {
     p.px = spx; p.py = spy; p.prevPx = -1; p.prevPy = -1;
     p.spawnPx = spx; p.spawnPy = spy;
-    p.trail = []; p.trailHead = 0; p.trailFill = 0;
+    p.trailHead = 0; p.trailFill = 0;
     p.vHead = 0; p.vFill = 0;
     p.vBuf[0] = spy * CANVAS_PX + spx; p.vHead = 1; p.vFill = 1;
     p.age = ageOffset || 0;
@@ -469,7 +473,7 @@ function initAtSpawn(p, spx, spy, ageOffset) {
 
 function makeParticle(ageOffset) {
     const [spx, spy] = randomSpawnPoint();
-    const p = { px: 0, py: 0, prevPx: -1, prevPy: -1, spawnPx: 0, spawnPy: 0, trail: [], vBuf: new Uint32Array(LOOP_MEMORY), vHead: 0, vFill: 0, age: 0, maxAge: 0 };
+    const p = { px: 0, py: 0, prevPx: -1, prevPy: -1, spawnPx: 0, spawnPy: 0, vBuf: new Uint32Array(LOOP_MEMORY), vHead: 0, vFill: 0, age: 0, maxAge: 0 };
     initAtSpawn(p, spx, spy, ageOffset);
     return p;
 }
@@ -556,7 +560,7 @@ function initParticleSystem() {
     trailGeo.setAttribute('color',    new THREE.BufferAttribute(allCol, 3));
     // Draw as points so we don't need per-particle line segments
     trailMesh = new THREE.Points(trailGeo, new THREE.PointsMaterial({
-        vertexColors: true, size: 0.12, sizeAttenuation: true, transparent: true, opacity: 0.85,
+        vertexColors: true, size: 0.12, sizeAttenuation: true,
     }));
     trailMesh.frustumCulled = false;
     trailGroup.add(trailMesh);
@@ -564,7 +568,7 @@ function initParticleSystem() {
     const hGeo = new THREE.BufferGeometry();
     hGeo.setAttribute('position', new THREE.BufferAttribute(headPos, 3));
     headMesh = new THREE.Points(hGeo, new THREE.PointsMaterial({
-        color: ACCENT, size: 0.5, transparent: true, opacity: 1, sizeAttenuation: true,
+        color: ACCENT, size: 0.5, sizeAttenuation: true,
     }));
     headMesh.frustumCulled = false;
     scene.add(headMesh);
@@ -575,8 +579,7 @@ function updateParticles() {
         const p = particles[i];
         stepParticle(p);
 
-        // Head position
-        pixelToScene(p.px, p.py);
+        // Head position — _sceneX/_sceneZ already set by stepParticle
         headPos[i*3] = _sceneX; headPos[i*3+1] = 0.08; headPos[i*3+2] = _sceneZ;
 
         // Trail from ring buffer — oldest to newest
@@ -591,7 +594,7 @@ function updateParticles() {
                 x = p.trailBuf[idx * 2]; z = p.trailBuf[idx * 2 + 1];
             }
             pb[j*3] = x; pb[j*3+1] = 0.06; pb[j*3+2] = z;
-            const lum = Math.pow(j / (TRAIL_LEN - 1), 2);
+            const lum = LUM_LUT[j];
             cb[j*3] = 0.9*lum; cb[j*3+1] = 0.07*lum*lum; cb[j*3+2] = 0.07*lum*lum;
         }
     }
