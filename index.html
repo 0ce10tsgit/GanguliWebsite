@@ -159,11 +159,11 @@ const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units 
 const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;             // ≈ 93 units (map plane)
 const ACCENT         = 0xe64f4f;
 
-const PARTICLE_COUNT  = 75;
-const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
-const TRAIL_LEN       = 12;
-const STEPS_PER_FRAME = 1;    // canvas pixels advanced per step
-const STEP_INTERVAL   = 6;    // only step particles every N frames (slows them down)
+const PARTICLE_COUNT  = 50;
+const SPAWN_POINT_COUNT = 10; // number of random spawn points distributed across the mask
+const TRAIL_LEN       = 10;
+const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
+const STEP_INTERVAL   = 10;    // only step particles every N frames (slows them down)
 const SPAWN_RADIUS    = 120;  // canvas px from center to sample spawn pool from
 const LIFETIME_MIN    = 300;  // frames before forced respawn (~5s)
 const LIFETIME_MAX    = 1000;  // frames before forced respawn (~10s)
@@ -191,7 +191,7 @@ function status(msg) { $status.textContent = msg; }
 const container = document.getElementById('container');
 const scene     = new THREE.Scene();
 scene.background = new THREE.Color(20/255, 5/255, 7/255);
-scene.fog = new THREE.FogExp2(new THREE.Color(20/255, 5/255, 7/255), 0.006);
+scene.fog = null;
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
 // pitch=69°, dist=62
@@ -416,11 +416,10 @@ function pickNext(count, px, py, prevPx, prevPy, spawnPx, spawnPy, vBuf, vFill) 
     }
 }
 
+let _sceneX = 0, _sceneZ = 0;
 function pixelToScene(px, py) {
-    return {
-        x: (px - CANVAS_PX / 2) * SCENE_SCALE,
-        z: (py - CANVAS_PX / 2) * SCENE_SCALE,
-    };
+    _sceneX = (px - CANVAS_PX / 2) * SCENE_SCALE;
+    _sceneZ = (py - CANVAS_PX / 2) * SCENE_SCALE;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -521,9 +520,9 @@ function stepParticle(p) {
     }
 
     // Record scene position into ring buffer
-    const pos = pixelToScene(p.px, p.py);
-    p.trailBuf[p.trailHead * 2]     = pos.x;
-    p.trailBuf[p.trailHead * 2 + 1] = pos.z;
+    pixelToScene(p.px, p.py);
+    p.trailBuf[p.trailHead * 2]     = _sceneX;
+    p.trailBuf[p.trailHead * 2 + 1] = _sceneZ;
     p.trailHead = (p.trailHead + 1) % TRAIL_LEN;
     if (p.trailFill < TRAIL_LEN) p.trailFill++;
 }
@@ -577,8 +576,8 @@ function updateParticles() {
         stepParticle(p);
 
         // Head position
-        const pos = pixelToScene(p.px, p.py);
-        headPos[i*3] = pos.x; headPos[i*3+1] = 0.08; headPos[i*3+2] = pos.z;
+        pixelToScene(p.px, p.py);
+        headPos[i*3] = _sceneX; headPos[i*3+1] = 0.08; headPos[i*3+2] = _sceneZ;
 
         // Trail from ring buffer — oldest to newest
         const pb = trailPos[i], cb = trailCol[i];
@@ -586,7 +585,7 @@ function updateParticles() {
             const age = j - (TRAIL_LEN - p.trailFill); // negative = not yet filled
             let x, z;
             if (age < 0) {
-                x = pos.x; z = pos.z;
+                x = _sceneX; z = _sceneZ;
             } else {
                 const idx = (p.trailHead - p.trailFill + age + TRAIL_LEN) % TRAIL_LEN;
                 x = p.trailBuf[idx * 2]; z = p.trailBuf[idx * 2 + 1];
