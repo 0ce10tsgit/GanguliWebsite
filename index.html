@@ -690,12 +690,31 @@ async function run(lat, lng) {
 // ANIMATION LOOP
 // ─────────────────────────────────────────────────────────────────────────────
 let time = 0, frame = 0;
+let _lastFpsTime = performance.now(), _particleMs = 0, _renderMs = 0;
 (function animate() {
     requestAnimationFrame(animate);
     time += 0.016; frame++;
-    if (running && pixelData && frame % STEP_INTERVAL === 0) updateParticles();
+
+    let t0, t1;
+
+    if (running && pixelData && frame % STEP_INTERVAL === 0) {
+        t0 = performance.now();
+        updateParticles();
+        _particleMs = performance.now() - t0;
+    }
+
     controls.update();
+
+    t0 = performance.now();
     renderer.render(scene, camera);
+    _renderMs = performance.now() - t0;
+
+    if (frame % 60 === 0) {
+        const now = performance.now();
+        const fps = (60 / ((now - _lastFpsTime) / 1000)).toFixed(1);
+        _lastFpsTime = now;
+        console.log(`FPS: ${fps} | particles: ${_particleMs.toFixed(2)}ms | render: ${_renderMs.toFixed(2)}ms`);
+    }
 })();
 
 window.addEventListener('resize', () => {
