@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ganguli.dev</title>
+    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        :root {
+            --accent: #e64f4f;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #000;
+            position: relative;
+            overflow: hidden;
+        }
+        #scene-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        h1 {
+            color: var(--accent);
+            font-size: 72px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            font-family: Arial, sans-serif;
+            position: relative;
+            z-index: 1;
+        }
+        img {
+            max-width: 90%;
+            max-height: 50vh;
+            object-fit: contain;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        .location {
+            color: var(--accent);
+            font-size: 48px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        .dining-btn {
+            margin-top: 32px;
+            display: inline-block;
+            color: var(--accent);
+            font-size: 24px;
+            font-weight: bold;
+            font-family: Arial, sans-serif;
+            text-decoration: none;
+            border: 3px solid var(--accent);
+            padding: 12px 28px;
+            transition: background 0.15s, color 0.15s;
+            position: relative;
+            z-index: 1;
+        }
+        .dining-btn:hover {
+            background: var(--accent);
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div id="scene-container"></div>
+    <h1>hey.</h1>
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9LXMIg-A8rCbNZw0ku7Ys6pa1CO4VxrFuKw&s" alt="ganguli.dev">
+    <div class="location" id="location">Loading location...</div>
+    <a class="dining-btn" href="dining/login.php">RPI DINING(menu utility for me)</a>
+    <a class="dining-btn" href="pitch/pitch.html">Elevator Pitch for potential Employers</a>
+    <div style="display: flex; gap: 24px; margin-top: 32px; position: relative; z-index: 1;">
+      <a href="https://github.com/0ce10tsgit" target="_blank" title="GitHub" style="color: #fff; transition: color 0.15s;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+      </a>
+      <a href="https://www.linkedin.com/in/oyonganguli/" target="_blank" title="LinkedIn" style="color: #fff; transition: color 0.15s;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      </a>
+      <a href="mailto:ganguo@rpi.edu" title="Email" style="color: #fff; transition: color 0.15s;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+      </a>
+    </div>
+    <script>
+        const ACCENT = 0xe64f4f;
+        const ACCENT_CSS = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+
+        // --- Three.js scene setup ---
+        const container = document.getElementById('scene-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.FogExp2(0x000000, 0.012);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(18, 14, 18);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.4;
+        controls.enableZoom = false;
+        controls.enablePan = false;
+        controls.maxPolarAngle = Math.PI / 2.2;
+        controls.minPolarAngle = 0.3;
+        controls.target.set(0, 0, 0);
+
+        // --- Ground plane with grid ---
+        const planeSize = 120;
+        const planeGeo = new THREE.PlaneGeometry(planeSize, planeSize);
+        const planeMat = new THREE.MeshBasicMaterial({ color: 0x050508, side: THREE.DoubleSide });
+        const plane = new THREE.Mesh(planeGeo, planeMat);
+        plane.rotation.x = -Math.PI / 2;
+        plane.position.y = -0.01;
+        scene.add(plane);
+
+        // Grid helper
+        const grid = new THREE.GridHelper(planeSize, 60, 0x1a1a2e, 0x0d0d1a);
+        scene.add(grid);
+
+        // Inner brighter grid
+        const gridInner = new THREE.GridHelper(40, 20, 0x2a1a1a, 0x1a0d0d);
+        scene.add(gridInner);
+
+        // --- Coordinate ring (accent circle on the ground) ---
+        const ringGeo = new THREE.RingGeometry(1.8, 2.0, 64);
+        const ringMat = new THREE.MeshBasicMaterial({ color: ACCENT, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
+        const ring = new THREE.Mesh(ringGeo, ringMat);
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.y = 0.02;
+        scene.add(ring);
+
+        // Outer pulse ring
+        const pulseGeo = new THREE.RingGeometry(2.5, 2.6, 64);
+        const pulseMat = new THREE.MeshBasicMaterial({ color: ACCENT, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
+        const pulseRing = new THREE.Mesh(pulseGeo, pulseMat);
+        pulseRing.rotation.x = -Math.PI / 2;
+        pulseRing.position.y = 0.01;
+        scene.add(pulseRing);
+
+        // --- Central marker pillar ---
+        const pillarGeo = new THREE.CylinderGeometry(0.15, 0.15, 5, 16);
+        const pillarMat = new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.6 });
+        const pillar = new THREE.Mesh(pillarGeo, pillarMat);
+        pillar.position.y = 2.5;
+        scene.add(pillar);
+
+        // Marker sphere on top
+        const sphereGeo = new THREE.SphereGeometry(0.4, 32, 32);
+        const sphereMat = new THREE.MeshBasicMaterial({ color: ACCENT });
+        const sphere = new THREE.Mesh(sphereGeo, sphereMat);
+        sphere.position.y = 5.2;
+        scene.add(sphere);
+
+        // Glow sphere (larger, transparent)
+        const glowGeo = new THREE.SphereGeometry(0.8, 32, 32);
+        const glowMat = new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.15 });
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.position.y = 5.2;
+        scene.add(glow);
+
+        // --- Scatter some subtle reference points ---
+        const dotGeo = new THREE.CircleGeometry(0.12, 16);
+        const dotMat = new THREE.MeshBasicMaterial({ color: 0x333344, side: THREE.DoubleSide });
+        for (let i = 0; i < 40; i++) {
+            const dot = new THREE.Mesh(dotGeo, dotMat);
+            dot.rotation.x = -Math.PI / 2;
+            dot.position.set(
+                (Math.random() - 0.5) * 50,
+                0.02,
+                (Math.random() - 0.5) * 50
+            );
+            scene.add(dot);
+        }
+
+        // --- Floating particles ---
+        const particleCount = 200;
+        const particleGeo = new THREE.BufferGeometry();
+        const positions = new Float32Array(particleCount * 3);
+        for (let i = 0; i < particleCount; i++) {
+            positions[i * 3] = (Math.random() - 0.5) * 60;
+            positions[i * 3 + 1] = Math.random() * 15;
+            positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+        }
+        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        const particleMat = new THREE.PointsMaterial({ color: 0x444466, size: 0.08, transparent: true, opacity: 0.6 });
+        const particles = new THREE.Points(particleGeo, particleMat);
+        scene.add(particles);
+
+        // --- Crosshair lines on ground through center ---
+        const lineMat = new THREE.LineBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.15 });
+        const lineLen = 30;
+        const lineX = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(-lineLen, 0.02, 0),
+            new THREE.Vector3(lineLen, 0.02, 0)
+        ]);
+        scene.add(new THREE.Line(lineX, lineMat));
+        const lineZ = new THREE.BufferGeometry().setFromPoints([
+            new THREE.Vector3(0, 0.02, -lineLen),
+            new THREE.Vector3(0, 0.02, lineLen)
+        ]);
+        scene.add(new THREE.Line(lineZ, lineMat));
+
+        // --- Animation loop ---
+        let time = 0;
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.016;
+
+            // Pulse ring animation
+            const pulseScale = 1 + Math.sin(time * 1.5) * 0.3;
+            pulseRing.scale.set(pulseScale, pulseScale, 1);
+            pulseMat.opacity = 0.3 - Math.sin(time * 1.5) * 0.15;
+
+            // Glow pulse
+            const glowScale = 1 + Math.sin(time * 2) * 0.2;
+            glow.scale.set(glowScale, glowScale, glowScale);
+
+            // Sphere gentle bob
+            sphere.position.y = 5.2 + Math.sin(time * 0.8) * 0.15;
+            glow.position.y = sphere.position.y;
+
+            // Particles drift
+            const posArr = particleGeo.attributes.position.array;
+            for (let i = 0; i < particleCount; i++) {
+                posArr[i * 3 + 1] += Math.sin(time + i) * 0.002;
+            }
+            particleGeo.attributes.position.needsUpdate = true;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- Resize handler ---
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // --- Location fetch (same logic as before) ---
+        fetch('/location.php')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('location').innerHTML = `${data.city}, ${data.regionName}<br>${data.lat}, ${data.lon}`;
+            })
+            .catch(error => {
+                document.getElementById('location').textContent = 'welcome';
+            });
+    </script>
+</body>
+</html>

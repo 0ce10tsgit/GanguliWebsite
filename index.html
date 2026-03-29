@@ -3,269 +3,643 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ganguli.dev</title>
-    <script src="https://unpkg.com/three@0.160.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.160.0/examples/js/controls/OrbitControls.js"></script>
+    <title>Road Particle Effect — Test</title>
     <style>
-        :root {
-            --accent: #e64f4f;
+        :root { --accent: #e64f4f; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #000; overflow: hidden; font-family: Arial, sans-serif; }
+        #container { width: 100vw; height: 100vh; }
+        #status { display: none; }
+        #top-bar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+            display: flex; align-items: center; gap: 24px;
+            padding: 18px 32px;
+            pointer-events: none;
         }
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #000;
-            position: relative;
-            overflow: hidden;
+        #top-bar h1 {
+            color: var(--accent); font-size: 48px; font-weight: bold;
         }
-        #scene-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
+        #top-bar #city {
+            color: var(--accent); font-size: 28px; font-weight: bold;
         }
-        h1 {
-            color: var(--accent);
-            font-size: 72px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            font-family: Arial, sans-serif;
-            position: relative;
-            z-index: 1;
-        }
-        img {
-            max-width: 90%;
-            max-height: 50vh;
-            object-fit: contain;
-            margin-bottom: 20px;
-            position: relative;
-            z-index: 1;
-        }
-        .location {
-            color: var(--accent);
-            font-size: 48px;
-            font-weight: bold;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            position: relative;
-            z-index: 1;
+        #bottom-bar {
+            position: fixed; bottom: 0; left: 0; right: 0; z-index: 10;
+            display: flex; flex-direction: column; align-items: center; gap: 12px;
+            padding: 0 0 28px 0; pointer-events: all;
         }
         .dining-btn {
-            margin-top: 32px;
-            display: inline-block;
-            color: var(--accent);
-            font-size: 24px;
-            font-weight: bold;
-            font-family: Arial, sans-serif;
-            text-decoration: none;
-            border: 3px solid var(--accent);
-            padding: 12px 28px;
-            transition: background 0.15s, color 0.15s;
-            position: relative;
-            z-index: 1;
+            display: inline-block; color: var(--accent);
+            font-size: 18px; font-weight: bold;
+            text-decoration: none; border: 2px solid var(--accent);
+            padding: 8px 22px; transition: background 0.15s, color 0.15s;
         }
-        .dining-btn:hover {
-            background: var(--accent);
-            color: #000;
+        .dining-btn:hover { background: var(--accent); color: #000; }
+        .btn-row { display: flex; gap: 16px; }
+        .icon-row { display: flex; gap: 24px; margin-top: 4px; }
+        .icon-row a { color: #fff; transition: color 0.15s; }
+        #right-panel {
+            position: fixed; top: 88px; right: 32px;
+            z-index: 10; display: flex; align-items: center; gap: 16px;
+            pointer-events: none;
+        }
+        #right-panel img {
+            width: 72px; height: 72px; border-radius: 50%;
+            object-fit: cover; border: 2px solid var(--accent);
+        }
+        #right-panel .info { display: flex; flex-direction: column; gap: 4px; }
+        #right-panel .name {
+            color: var(--accent); font-size: 22px; font-weight: bold;
+        }
+        #right-panel .title {
+            color: #aaa; font-size: 13px;
         }
     </style>
 </head>
 <body>
-    <div id="scene-container"></div>
+<div id="container"></div>
+<div id="status"></div>
+
+<div id="top-bar">
     <h1>hey.</h1>
-    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9LXMIg-A8rCbNZw0ku7Ys6pa1CO4VxrFuKw&s" alt="ganguli.dev">
-    <div class="location" id="location">Loading location...</div>
-    <a class="dining-btn" href="dining/login.php">RPI DINING(menu utility for me)</a>
-    <a class="dining-btn" href="pitch/pitch.html">Elevator Pitch for potential Employers</a>
-    <div style="display: flex; gap: 24px; margin-top: 32px; position: relative; z-index: 1;">
-      <a href="https://github.com/0ce10tsgit" target="_blank" title="GitHub" style="color: #fff; transition: color 0.15s;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
-      </a>
-      <a href="https://www.linkedin.com/in/oyonganguli/" target="_blank" title="LinkedIn" style="color: #fff; transition: color 0.15s;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-      </a>
-      <a href="mailto:ganguo@rpi.edu" title="Email" style="color: #fff; transition: color 0.15s;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
-      </a>
+    <span id="city"></span>
+</div>
+
+<div id="right-panel">
+    <img src="IMG_0976.jpeg" alt="Oyon Ganguli">
+    <div class="info">
+        <span class="name">Oyon Ganguli</span>
+        <span class="title">RPI Information Technology<br>and Web Sciences '29</span>
     </div>
-    <script>
-        const ACCENT = 0xe64f4f;
-        const ACCENT_CSS = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+</div>
 
-        // --- Three.js scene setup ---
-        const container = document.getElementById('scene-container');
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x000000);
-        scene.fog = new THREE.FogExp2(0x000000, 0.012);
+<div id="bottom-bar">
+    <div class="btn-row">
+        <a class="dining-btn" href="dining/login.php">RPI DINING</a>
+        <a class="dining-btn" href="pitch/pitch.html">Elevator Pitch</a>
+    </div>
+    <div class="icon-row">
+        <a href="https://github.com/0ce10tsgit" target="_blank" title="GitHub">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.385-1.335-1.755-1.335-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.605-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        </a>
+        <a href="https://www.linkedin.com/in/oyonganguli/" target="_blank" title="LinkedIn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </a>
+        <a href="mailto:ganguo@rpi.edu" title="Email">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        </a>
+    </div>
+</div>
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.set(18, 14, 18);
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        container.appendChild(renderer.domElement);
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────────────────────────────────
+const TILE_SIZE        = 256;
+const TILE_GRID        = 4;                                      // mask: 3×3 tiles
+const CANVAS_PX        = TILE_GRID * TILE_SIZE;                  // 768 — road mask area
+const VISUAL_TILE_GRID = 19;                                     // visual: 19×19 tiles
+const VISUAL_PX        = VISUAL_TILE_GRID * TILE_SIZE;           // 1792
+const MASK_OFFSET      = ((VISUAL_TILE_GRID - TILE_GRID) / 2) * TILE_SIZE; // 512
+const SCENE_SCALE      = 0.052;
+const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units (particles)
+const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;             // ≈ 93 units (map plane)
+const ACCENT         = 0xe64f4f;
 
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.4;
-        controls.enableZoom = false;
-        controls.enablePan = false;
-        controls.maxPolarAngle = Math.PI / 2.2;
-        controls.minPolarAngle = 0.3;
-        controls.target.set(0, 0, 0);
+const PARTICLE_COUNT  = 80;
+const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
+const TRAIL_LEN       = 28;
+const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
+const STEP_INTERVAL   = 5;    // only step particles every N frames (slows them down)
+const SPAWN_RADIUS    = 120;  // canvas px from center to sample spawn pool from
+const LIFETIME_MIN    = 300;  // frames before forced respawn (~5s)
+const LIFETIME_MAX    = 1000;  // frames before forced respawn (~10s)
+const LOOP_MEMORY     = 50;   // how many recent pixels to remember per particle
 
-        // --- Ground plane with grid ---
-        const planeSize = 120;
-        const planeGeo = new THREE.PlaneGeometry(planeSize, planeSize);
-        const planeMat = new THREE.MeshBasicMaterial({ color: 0x050508, side: THREE.DoubleSide });
-        const plane = new THREE.Mesh(planeGeo, planeMat);
-        plane.rotation.x = -Math.PI / 2;
-        plane.position.y = -0.01;
-        scene.add(plane);
+// Road pixel: #191919 = RGB(25,25,25) — confirmed from tile scan
+const ROAD_R = 25, ROAD_G = 25, ROAD_B = 25;
 
-        // Grid helper
-        const grid = new THREE.GridHelper(planeSize, 60, 0x1a1a2e, 0x0d0d1a);
-        scene.add(grid);
+const DX8 = [-1, 0, 1, -1, 1, -1, 0, 1];
+const DY8 = [-1,-1,-1,  0, 0,  1, 1, 1];
 
-        // Inner brighter grid
-        const gridInner = new THREE.GridHelper(40, 20, 0x2a1a1a, 0x1a0d0d);
-        scene.add(gridInner);
+// ─────────────────────────────────────────────────────────────────────────────
+// UI
+// ─────────────────────────────────────────────────────────────────────────────
+const $status = document.getElementById('status');
+const camDist = 62;
+function status(msg) { $status.textContent = msg; }
 
-        // --- Coordinate ring (accent circle on the ground) ---
-        const ringGeo = new THREE.RingGeometry(1.8, 2.0, 64);
-        const ringMat = new THREE.MeshBasicMaterial({ color: ACCENT, side: THREE.DoubleSide, transparent: true, opacity: 0.8 });
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        ring.rotation.x = -Math.PI / 2;
-        ring.position.y = 0.02;
-        scene.add(ring);
+// ─────────────────────────────────────────────────────────────────────────────
+// THREE.JS SCENE
+// ─────────────────────────────────────────────────────────────────────────────
+const container = document.getElementById('container');
+const scene     = new THREE.Scene();
+scene.background = new THREE.Color(0/255, 0/255, 17/255);
+scene.fog = new THREE.FogExp2(new THREE.Color(0/255, 0/255, 17/255), 0.006);
 
-        // Outer pulse ring
-        const pulseGeo = new THREE.RingGeometry(2.5, 2.6, 64);
-        const pulseMat = new THREE.MeshBasicMaterial({ color: ACCENT, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
-        const pulseRing = new THREE.Mesh(pulseGeo, pulseMat);
-        pulseRing.rotation.x = -Math.PI / 2;
-        pulseRing.position.y = 0.01;
-        scene.add(pulseRing);
+const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
+// pitch=64°, dist=62
+camera.position.set(62*Math.cos(64*Math.PI/180), 62*Math.sin(64*Math.PI/180), 62*Math.cos(64*Math.PI/180));
 
-        // --- Central marker pillar ---
-        const pillarGeo = new THREE.CylinderGeometry(0.15, 0.15, 5, 16);
-        const pillarMat = new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.6 });
-        const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-        pillar.position.y = 2.5;
-        scene.add(pillar);
+const renderer = new THREE.WebGLRenderer({ antialias: false });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(1);
+container.appendChild(renderer.domElement);
 
-        // Marker sphere on top
-        const sphereGeo = new THREE.SphereGeometry(0.4, 32, 32);
-        const sphereMat = new THREE.MeshBasicMaterial({ color: ACCENT });
-        const sphere = new THREE.Mesh(sphereGeo, sphereMat);
-        sphere.position.y = 5.2;
-        scene.add(sphere);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.05;
+controls.autoRotate = true; controls.autoRotateSpeed = 0.35;
+controls.enableZoom = false; controls.enablePan = false;
+controls.enableRotate = true;
+controls.maxPolarAngle = Math.PI / 2.05; controls.minPolarAngle = 0.1;
 
-        // Glow sphere (larger, transparent)
-        const glowGeo = new THREE.SphereGeometry(0.8, 32, 32);
-        const glowMat = new THREE.MeshBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.15 });
-        const glow = new THREE.Mesh(glowGeo, glowMat);
-        glow.position.y = 5.2;
-        scene.add(glow);
+// Ground planes
+const bgPlane = new THREE.Mesh(
+    new THREE.PlaneGeometry(400, 400),
+    new THREE.MeshBasicMaterial({ color: 0x03010a })
+);
+bgPlane.rotation.x = -Math.PI / 2; bgPlane.position.y = -0.05; scene.add(bgPlane);
 
-        // --- Scatter some subtle reference points ---
-        const dotGeo = new THREE.CircleGeometry(0.12, 16);
-        const dotMat = new THREE.MeshBasicMaterial({ color: 0x333344, side: THREE.DoubleSide });
-        for (let i = 0; i < 40; i++) {
-            const dot = new THREE.Mesh(dotGeo, dotMat);
-            dot.rotation.x = -Math.PI / 2;
-            dot.position.set(
-                (Math.random() - 0.5) * 50,
-                0.02,
-                (Math.random() - 0.5) * 50
-            );
-            scene.add(dot);
-        }
 
-        // --- Floating particles ---
-        const particleCount = 200;
-        const particleGeo = new THREE.BufferGeometry();
-        const positions = new Float32Array(particleCount * 3);
-        for (let i = 0; i < particleCount; i++) {
-            positions[i * 3] = (Math.random() - 0.5) * 60;
-            positions[i * 3 + 1] = Math.random() * 15;
-            positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
-        }
-        particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        const particleMat = new THREE.PointsMaterial({ color: 0x444466, size: 0.08, transparent: true, opacity: 0.6 });
-        const particles = new THREE.Points(particleGeo, particleMat);
-        scene.add(particles);
+const mapMat   = new THREE.MeshBasicMaterial({ color: 0x080810 });
+const mapPlane = new THREE.Mesh(new THREE.PlaneGeometry(VISUAL_GROUND_SIZE, VISUAL_GROUND_SIZE), mapMat);
+mapPlane.rotation.x = -Math.PI / 2; mapPlane.position.y = -0.01; scene.add(mapPlane);
 
-        // --- Crosshair lines on ground through center ---
-        const lineMat = new THREE.LineBasicMaterial({ color: ACCENT, transparent: true, opacity: 0.15 });
-        const lineLen = 30;
-        const lineX = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(-lineLen, 0.02, 0),
-            new THREE.Vector3(lineLen, 0.02, 0)
-        ]);
-        scene.add(new THREE.Line(lineX, lineMat));
-        const lineZ = new THREE.BufferGeometry().setFromPoints([
-            new THREE.Vector3(0, 0.02, -lineLen),
-            new THREE.Vector3(0, 0.02, lineLen)
-        ]);
-        scene.add(new THREE.Line(lineZ, lineMat));
 
-        // --- Animation loop ---
-        let time = 0;
-        function animate() {
-            requestAnimationFrame(animate);
-            time += 0.016;
+const trailGroup = new THREE.Group(); scene.add(trailGroup);
 
-            // Pulse ring animation
-            const pulseScale = 1 + Math.sin(time * 1.5) * 0.3;
-            pulseRing.scale.set(pulseScale, pulseScale, 1);
-            pulseMat.opacity = 0.3 - Math.sin(time * 1.5) * 0.15;
+// ─────────────────────────────────────────────────────────────────────────────
+// TILE FETCHING
+// ─────────────────────────────────────────────────────────────────────────────
+function latLngToTile(lat, lng, zoom) {
+    const n = Math.pow(2, zoom), latRad = lat * Math.PI / 180;
+    return {
+        x: Math.floor((lng + 180) / 360 * n),
+        y: Math.floor((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n),
+    };
+}
 
-            // Glow pulse
-            const glowScale = 1 + Math.sin(time * 2) * 0.2;
-            glow.scale.set(glowScale, glowScale, glowScale);
+async function fetchTiles(lat, lng, zoom) {
+    const center  = latLngToTile(lat, lng, zoom);
+    const vhalf   = Math.floor(VISUAL_TILE_GRID / 2);
 
-            // Sphere gentle bob
-            sphere.position.y = 5.2 + Math.sin(time * 0.8) * 0.15;
-            glow.position.y = sphere.position.y;
+    // Full 7×7 visual canvas
+    const vCanvas = document.createElement('canvas');
+    vCanvas.width = vCanvas.height = VISUAL_PX;
+    const vCtx = vCanvas.getContext('2d');
 
-            // Particles drift
-            const posArr = particleGeo.attributes.position.array;
-            for (let i = 0; i < particleCount; i++) {
-                posArr[i * 3 + 1] += Math.sin(time + i) * 0.002;
+    const load = (tx, ty) => new Promise((res, rej) => {
+        const img = new Image(); img.crossOrigin = 'anonymous';
+        img.onload = () => res({ img, tx, ty }); img.onerror = rej;
+        img.src = `https://${'abcd'[Math.floor(Math.random()*4)]}.basemaps.cartocdn.com/dark_nolabels/${zoom}/${tx}/${ty}.png`;
+    });
+
+    const tiles = [];
+    for (let dy = -vhalf; dy <= vhalf; dy++)
+        for (let dx = -vhalf; dx <= vhalf; dx++)
+            tiles.push(load(center.x+dx, center.y+dy));
+
+    const results = await Promise.all(tiles);
+    for (const { img, tx, ty } of results)
+        vCtx.drawImage(img, (tx-center.x+vhalf)*TILE_SIZE, (ty-center.y+vhalf)*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+
+    // Extract only center 3×3 for mask — no extra compute
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = maskCanvas.height = CANVAS_PX;
+    const mCtx = maskCanvas.getContext('2d');
+    mCtx.drawImage(vCanvas, MASK_OFFSET, MASK_OFFSET, CANVAS_PX, CANVAS_PX, 0, 0, CANVAS_PX, CANVAS_PX);
+
+    return { visualCanvas: vCanvas, maskCtx: mCtx };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PIXEL ROAD CHECK — every single movement step calls this
+// ─────────────────────────────────────────────────────────────────────────────
+let pixelData  = null;        // raw Uint8ClampedArray from getImageData
+let roadMask   = null;        // Uint8Array: 1 = road (dilated), 0 = not road
+let rawRoadMask = null;       // Uint8Array: 1 = actual road color (pre-dilation)
+let nearCenterPixels = [];    // road pixels within SPAWN_RADIUS of canvas center
+
+function isRoad(px, py) {
+    if (px < 0 || py < 0 || px >= CANVAS_PX || py >= CANVAS_PX) return false;
+    return roadMask[py * CANVAS_PX + px] === 1;
+}
+
+// Build road mask: match all uniform-grey pixels in the road brightness band,
+// then dilate 2px to close intersection and casing gaps.
+// Road band: brightness 16–42, R≈G≈B (spread ≤ 10).
+// Background is ~10 brightness — safely excluded.
+function buildRoadMask() {
+    const size = CANVAS_PX * CANVAS_PX;
+    const base = new Uint8Array(size);
+    for (let i = 0; i < size; i++) {
+        const p = i * 4;
+        const r = pixelData[p], g = pixelData[p+1], b = pixelData[p+2];
+        const br = (r + g + b) / 3;
+        const spread = Math.max(r, g, b) - Math.min(r, g, b);
+        if (br >= 18 && br <= 34 && spread <= 5) base[i] = 1;
+    }
+    rawRoadMask = base;
+    // Two rounds of dilation to close gaps
+    roadMask = new Uint8Array(size);
+    const tmp  = new Uint8Array(size);
+    for (let py = 0; py < CANVAS_PX; py++) {
+        for (let px = 0; px < CANVAS_PX; px++) {
+            if (!base[py * CANVAS_PX + px]) continue;
+            tmp[py * CANVAS_PX + px] = 1;
+            for (let d = 0; d < 8; d++) {
+                const nx = px + DX8[d], ny = py + DY8[d];
+                if (nx >= 0 && ny >= 0 && nx < CANVAS_PX && ny < CANVAS_PX) tmp[ny * CANVAS_PX + nx] = 1;
             }
-            particleGeo.attributes.position.needsUpdate = true;
-
-            controls.update();
-            renderer.render(scene, camera);
         }
-        animate();
+    }
+    for (let py = 0; py < CANVAS_PX; py++) {
+        for (let px = 0; px < CANVAS_PX; px++) {
+            if (!tmp[py * CANVAS_PX + px]) continue;
+            roadMask[py * CANVAS_PX + px] = 1;
+            for (let d = 0; d < 8; d++) {
+                const nx = px + DX8[d], ny = py + DY8[d];
+                if (nx >= 0 && ny >= 0 && nx < CANVAS_PX && ny < CANVAS_PX) roadMask[ny * CANVAS_PX + nx] = 1;
+            }
+        }
+    }
+}
 
-        // --- Resize handler ---
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+// ─────────────────────────────────────────────────────────────────────────────
+// FIND NEAREST ROAD PIXEL TO CANVAS CENTER
+// ─────────────────────────────────────────────────────────────────────────────
+let centerRoadPx = CANVAS_PX >> 1;
+let centerRoadPy = CANVAS_PX >> 1;
+let knownRoadPixels = []; // sampled pool of confirmed road pixels for respawning
 
-        // --- Location fetch (same logic as before) ---
-        fetch('/location.php')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('location').innerHTML = `${data.city}, ${data.regionName}<br>${data.lat}, ${data.lon}`;
-            })
-            .catch(error => {
-                document.getElementById('location').textContent = 'welcome';
-            });
-    </script>
+function findCenterRoad() {
+    const cx = CANVAS_PX >> 1, cy = CANVAS_PX >> 1;
+    // First pass: find nearest road intersection (3+ neighbors) — good spawn point
+    for (let r = 0; r < 250; r++) {
+        for (let dy = -r; dy <= r; dy++) {
+            for (let dx = -r; dx <= r; dx++) {
+                if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                const nx = cx+dx, ny = cy+dy;
+                if (isRoad(nx, ny) && roadNeighbors(nx, ny, -1, -1).length >= 3) {
+                    centerRoadPx = nx; centerRoadPy = ny; return true;
+                }
+            }
+        }
+    }
+    // Fallback: any road pixel near center
+    for (let r = 0; r < 250; r++) {
+        for (let dy = -r; dy <= r; dy++) {
+            for (let dx = -r; dx <= r; dx++) {
+                if (r > 0 && Math.abs(dx) !== r && Math.abs(dy) !== r) continue;
+                const nx = cx+dx, ny = cy+dy;
+                if (isRoad(nx, ny)) { centerRoadPx = nx; centerRoadPy = ny; return true; }
+            }
+        }
+    }
+    return false;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARTICLE WALK — real-time #262626 pixel traversal
+// ─────────────────────────────────────────────────────────────────────────────
+function roadNeighbors(px, py, prevPx, prevPy) {
+    const out = [];
+    for (let d = 0; d < 8; d++) {
+        const nx = px + DX8[d], ny = py + DY8[d];
+        if (nx === prevPx && ny === prevPy) continue;  // don't backtrack
+        if (isRoad(nx, ny)) out.push([nx, ny]);
+    }
+    return out;
+}
+
+function pickNext(neighbors, px, py, prevPx, prevPy, spawnPx, spawnPy, visited) {
+    const dirX = px - prevPx, dirY = py - prevPy;
+    // Normalize direction so diagonal doesn't beat axis-aligned
+    const dirLen = Math.sqrt(dirX*dirX + dirY*dirY) || 1;
+    const ndx = dirX / dirLen, ndy = dirY / dirLen;
+    // Normalized outward vector
+    const rawX = px - spawnPx, rawY = py - spawnPy;
+    const outLen = Math.sqrt(rawX*rawX + rawY*rawY) || 1;
+    const outX = rawX / outLen, outY = rawY / outLen;
+
+    let best = null, bestScore = -Infinity;
+    for (const [nx, ny] of neighbors) {
+        const stepX = nx - px, stepY = ny - py;
+        const stepLen = Math.sqrt(stepX*stepX + stepY*stepY) || 1;
+        const forward  = (stepX/stepLen) * ndx + (stepY/stepLen) * ndy;  // -1 to 1
+        const outward  = (stepX/stepLen) * outX + (stepY/stepLen) * outY; // -1 to 1
+        const visitPen = visited && visited.has(ny * CANVAS_PX + nx) ? -2.0 : 0;
+        const score    = forward * 1.8 + outward * 0.4 + visitPen + (Math.random() - 0.5) * 0.4;
+        if (score > bestScore) { bestScore = score; best = [nx, ny]; }
+    }
+    return best;
+}
+
+function pixelToScene(px, py) {
+    return {
+        x: (px - CANVAS_PX / 2) * SCENE_SCALE,
+        z: (py - CANVAS_PX / 2) * SCENE_SCALE,
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PARTICLE SYSTEM
+// ─────────────────────────────────────────────────────────────────────────────
+let headMesh = null, headPos = null;
+let trailMesh = null;
+let trailPos = [], trailCol = [];
+let particles  = [];
+let spawnPoints = []; // N random road intersections spread across the mask
+
+function buildSpawnPoints() {
+    // Only spawn on actual road-colored pixels (pre-dilation), prefer intersections
+    const rawPool = knownRoadPixels.filter(([px, py]) =>
+        rawRoadMask[py * CANVAS_PX + px] === 1 && !isKillColor(px, py));
+    const src2 = rawPool.length ? rawPool : knownRoadPixels;
+    const pool = src2.filter(([px, py]) => roadNeighbors(px, py, -1, -1).length >= 3 && !isKillColor(px, py));
+    const src  = pool.length ? pool : src2;
+    spawnPoints = [];
+    // Shuffle a copy and pick evenly spaced entries for distribution
+    const step = Math.max(1, Math.floor(src.length / SPAWN_POINT_COUNT));
+    for (let i = 0; i < SPAWN_POINT_COUNT && i * step < src.length; i++) {
+        spawnPoints.push(src[i * step]);
+    }
+    if (!spawnPoints.length) spawnPoints.push([centerRoadPx, centerRoadPy]);
+}
+
+function randomSpawnPoint() {
+    return spawnPoints[Math.floor(Math.random() * spawnPoints.length)];
+}
+
+function initAtSpawn(p, spx, spy, ageOffset) {
+    p.px = spx; p.py = spy; p.prevPx = -1; p.prevPy = -1;
+    p.spawnPx = spx; p.spawnPy = spy;
+    p.trail = []; p.trailHead = 0; p.trailFill = 0;
+    p.visited = new Set();
+    p.visited.add(spy * CANVAS_PX + spx);
+    p.age = ageOffset || 0;
+    p.maxAge = LIFETIME_MIN + Math.floor(Math.random() * (LIFETIME_MAX - LIFETIME_MIN));
+    const dirs = roadNeighbors(spx, spy, -1, -1);
+    if (dirs.length) {
+        const d = dirs[Math.floor(Math.random() * dirs.length)];
+        p.prevPx = spx - (d[0] - spx);
+        p.prevPy = spy - (d[1] - spy);
+    }
+}
+
+function makeParticle(ageOffset) {
+    const [spx, spy] = randomSpawnPoint();
+    const p = { px: 0, py: 0, prevPx: -1, prevPy: -1, spawnPx: 0, spawnPy: 0, trail: [], visited: new Set(), age: 0, maxAge: 0 };
+    initAtSpawn(p, spx, spy, ageOffset);
+    return p;
+}
+
+function spawnParticle(ageOffset) { return makeParticle(ageOffset); }
+
+function respawnParticle(p) {
+    const [spx, spy] = randomSpawnPoint();
+    initAtSpawn(p, spx, spy, 0);
+}
+
+function isKillColor(px, py) {
+    if (!pixelData || px < 0 || py < 0 || px >= CANVAS_PX || py >= CANVAS_PX) return false;
+    const i = (py * CANVAS_PX + px) * 4;
+    const r = pixelData[i], g = pixelData[i+1], b = pixelData[i+2];
+    return Math.abs(r - 108) <= 8 && Math.abs(g - 108) <= 8 && Math.abs(b - 108) <= 8;
+}
+
+function stepParticle(p) {
+    p.age++;
+
+    // Timed respawn
+    if (p.age >= p.maxAge) {
+        respawnParticle(p);
+        return;
+    }
+
+    for (let s = 0; s < STEPS_PER_FRAME; s++) {
+        // Kill if on #6c6c6c (e.g. highway/overpass artifact)
+        if (isKillColor(p.px, p.py)) {
+            respawnParticle(p);
+            break;
+        }
+
+        // Mark current pixel visited (rolling window)
+        const curKey = p.py * CANVAS_PX + p.px;
+        p.visited.add(curKey);
+        if (p.visited.size > LOOP_MEMORY) {
+            p.visited.delete(p.visited.values().next().value);
+        }
+
+        const neighbors = roadNeighbors(p.px, p.py, p.prevPx, p.prevPy);
+        if (!neighbors.length) {
+            respawnParticle(p);
+            break;
+        }
+        const next = pickNext(neighbors, p.px, p.py, p.prevPx, p.prevPy, p.spawnPx, p.spawnPy, p.visited);
+        p.prevPx = p.px; p.prevPy = p.py;
+        p.px = next[0]; p.py = next[1];
+    }
+
+    // Record scene position into ring buffer
+    const pos = pixelToScene(p.px, p.py);
+    p.trailBuf[p.trailHead * 2]     = pos.x;
+    p.trailBuf[p.trailHead * 2 + 1] = pos.z;
+    p.trailHead = (p.trailHead + 1) % TRAIL_LEN;
+    if (p.trailFill < TRAIL_LEN) p.trailFill++;
+}
+
+function initParticleSystem() {
+    // Dispose old
+    if (trailMesh) { trailMesh.geometry.dispose(); trailMesh.material.dispose(); trailGroup.remove(trailMesh); trailMesh = null; }
+    if (headMesh)  { headMesh.geometry.dispose();  headMesh.material.dispose();  scene.remove(headMesh); headMesh = null; }
+    particles = []; trailPos = []; trailCol = [];
+
+    // Single geometry for ALL trails — one draw call instead of PARTICLE_COUNT draw calls
+    const totalVerts = PARTICLE_COUNT * TRAIL_LEN;
+    const allPos = new Float32Array(totalVerts * 3);
+    const allCol = new Float32Array(totalVerts * 3);
+    headPos = new Float32Array(PARTICLE_COUNT * 3);
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const ageOffset = Math.floor((i / PARTICLE_COUNT) * LIFETIME_MIN);
+        const p = spawnParticle(ageOffset);
+        // Ring buffer instead of array with shift()
+        p.trailBuf = new Float32Array(TRAIL_LEN * 2); // x,z pairs
+        p.trailHead = 0;
+        p.trailFill = 0;
+        particles.push(p);
+        trailPos.push(allPos.subarray(i * TRAIL_LEN * 3, (i+1) * TRAIL_LEN * 3));
+        trailCol.push(allCol.subarray(i * TRAIL_LEN * 3, (i+1) * TRAIL_LEN * 3));
+    }
+
+    const trailGeo = new THREE.BufferGeometry();
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(allPos, 3));
+    trailGeo.setAttribute('color',    new THREE.BufferAttribute(allCol, 3));
+    // Draw as points so we don't need per-particle line segments
+    trailMesh = new THREE.Points(trailGeo, new THREE.PointsMaterial({
+        vertexColors: true, size: 0.12, sizeAttenuation: true, transparent: true, opacity: 0.85,
+    }));
+    trailMesh.frustumCulled = false;
+    trailGroup.add(trailMesh);
+
+    const hGeo = new THREE.BufferGeometry();
+    hGeo.setAttribute('position', new THREE.BufferAttribute(headPos, 3));
+    headMesh = new THREE.Points(hGeo, new THREE.PointsMaterial({
+        color: ACCENT, size: 0.5, transparent: true, opacity: 1, sizeAttenuation: true,
+    }));
+    headMesh.frustumCulled = false;
+    scene.add(headMesh);
+}
+
+function updateParticles() {
+    for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        stepParticle(p);
+
+        // Head position
+        const pos = pixelToScene(p.px, p.py);
+        headPos[i*3] = pos.x; headPos[i*3+1] = 0.08; headPos[i*3+2] = pos.z;
+
+        // Trail from ring buffer — oldest to newest
+        const pb = trailPos[i], cb = trailCol[i];
+        for (let j = 0; j < TRAIL_LEN; j++) {
+            const age = j - (TRAIL_LEN - p.trailFill); // negative = not yet filled
+            let x, z;
+            if (age < 0) {
+                x = pos.x; z = pos.z;
+            } else {
+                const idx = (p.trailHead - p.trailFill + age + TRAIL_LEN) % TRAIL_LEN;
+                x = p.trailBuf[idx * 2]; z = p.trailBuf[idx * 2 + 1];
+            }
+            pb[j*3] = x; pb[j*3+1] = 0.06; pb[j*3+2] = z;
+            const lum = Math.pow(j / (TRAIL_LEN - 1), 2);
+            cb[j*3] = 0.9*lum; cb[j*3+1] = 0.07*lum*lum; cb[j*3+2] = 0.07*lum*lum;
+        }
+    }
+    if (trailMesh) { trailMesh.geometry.attributes.position.needsUpdate = true; trailMesh.geometry.attributes.color.needsUpdate = true; }
+    if (headMesh) headMesh.geometry.attributes.position.needsUpdate = true;
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAP TEXTURE
+// ─────────────────────────────────────────────────────────────────────────────
+let activeTex = null;
+let tileCanvasRef = null; // original tiles, unmodified
+
+function applyMapTexture(canvas) {
+    if (activeTex) activeTex.dispose();
+    activeTex = new THREE.CanvasTexture(canvas);
+    mapMat.map = activeTex; mapMat.color.set(0xffffff); mapMat.needsUpdate = true;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────────────────────────────────────
+let running = false;
+
+async function run(lat, lng) {
+    running = false;
+    const zoom = 14;
+    status(`Fetching tiles at z${zoom}…`);
+    pixelData = null;
+
+    try {
+        const { visualCanvas, maskCtx } = await fetchTiles(lat, lng, zoom);
+        tileCanvasRef = visualCanvas;
+        applyMapTexture(visualCanvas);
+        status('Tiles loaded. Reading pixels…');
+
+        try {
+            pixelData = maskCtx.getImageData(0, 0, CANVAS_PX, CANVAS_PX).data;
+            buildRoadMask();
+
+            const ci  = ((CANVAS_PX >> 1) * CANVAS_PX + (CANVAS_PX >> 1)) * 4;
+            const centerColor = `rgb(${pixelData[ci]},${pixelData[ci+1]},${pixelData[ci+2]})`;
+
+            const found = findCenterRoad();
+            if (!found) {
+                status(`No road pixels near center (center=${centerColor}). Try a different location or zoom.`);
+                return;
+            }
+
+            // Build a pool of all road pixels so respawn isn't stuck at one isolated point
+            knownRoadPixels = [];
+            const _cx = CANVAS_PX >> 1, _cy = CANVAS_PX >> 1;
+            const _r2 = SPAWN_RADIUS * SPAWN_RADIUS;
+            nearCenterPixels = [];
+            for (let py2 = 0; py2 < CANVAS_PX; py2++) {
+                for (let px2 = 0; px2 < CANVAS_PX; px2++) {
+                    if (isRoad(px2, py2)) {
+                        knownRoadPixels.push([px2, py2]);
+                        const dx = px2 - _cx, dy = py2 - _cy;
+                        if (dx*dx + dy*dy <= _r2) nearCenterPixels.push([px2, py2]);
+                    }
+                }
+            }
+            console.log(`[road-particles] found ${knownRoadPixels.length} road pixels, ${nearCenterPixels.length} near center`);
+
+            if (!knownRoadPixels.length) {
+                status(`No road pixels (#191919) found. Try a different zoom or location.`);
+                return;
+            }
+
+            buildSpawnPoints();
+            console.log(`[road-particles] ${spawnPoints.length} spawn points across mask`);
+
+            initParticleSystem();
+            running = true;
+            status('');
+        } catch (e) {
+            console.warn('getImageData blocked:', e);
+            status('Pixel read blocked (CORS) — cannot detect roads.');
+        }
+    } catch (e) {
+        console.warn('Tile fetch failed:', e);
+        status('Tile fetch failed.');
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ANIMATION LOOP
+// ─────────────────────────────────────────────────────────────────────────────
+let time = 0, frame = 0;
+(function animate() {
+    requestAnimationFrame(animate);
+    time += 0.016; frame++;
+    if (running && pixelData && frame % STEP_INTERVAL === 0) updateParticles();
+    controls.update();
+    renderer.render(scene, camera);
+})();
+
+window.addEventListener('resize', () => {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+});
+
+
+fetch('/location.php')
+    .then(r => r.json())
+    .then(d => {
+        document.getElementById('city').textContent = `near and around ${d.city}`;
+        run(d.lat, d.lon);
+    })
+    .catch(() => {
+        document.getElementById('city').textContent = 'geocoding failed so here\'s boston';
+        run(42.33418545905304, -71.0445458583231);
+    });
+</script>
 </body>
 </html>
