@@ -11,15 +11,7 @@
         body { background: #000; overflow: hidden; font-family: Arial, sans-serif; }
         #container { width: 100vw; height: 100vh; }
         #status { display: none; }
-        #mobile-warning {
-            display: none;
-            position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
-            z-index: 20; background: rgba(20,20,20,0.92);
-            border: 1px solid var(--accent); color: #aaa;
-            font-size: 13px; padding: 10px 16px; border-radius: 6px;
-            text-align: center; max-width: 280px; pointer-events: none;
-        }
-        #top-bar {
+#top-bar {
             position: fixed; top: 0; left: 0; right: 0; z-index: 10;
             display: flex; align-items: center; gap: 24px;
             padding: 18px 32px;
@@ -117,7 +109,6 @@
 <body>
 <div id="container"></div>
 <div id="status"></div>
-<div id="mobile-warning">Best viewed on desktop — mobile WebGL performance is limited</div>
 
 <div id="top-bar">
     <h1>hey.</h1>
@@ -744,9 +735,6 @@ cityInfoBtn.addEventListener('click', () => {
 document.addEventListener('click', (e) => {
     if (e.target !== cityInfoBtn) cityTooltip.classList.remove('visible');
 });
-
-if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent))
-    document.getElementById('mobile-warning').style.display = 'block';
 
 fetch('/location.php')
     .then(r => r.json())
