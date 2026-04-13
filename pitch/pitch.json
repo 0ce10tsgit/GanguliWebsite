@@ -39,7 +39,7 @@
     "type": "push",
     "commits": [
       {
-        "message": "This Websites Repo",
+        "message": "This Website's Repo",
         "sha": "TsSite",
         "url": "https://github.com/0ce10tsgit/GanguliWebsite"
       }
@@ -50,7 +50,7 @@
     "type": "comment",
     "meta": "commented",
     "paragraphs": [
-      "<strong>Data Skills </strong>",
+      "<strong>Data Skills</strong>",
       "I have experience with PostgreSQL and MariaDB, both designing schemas as well as writing a lot of SQL which I learned from my ITWS1100 class and through personal projects",
        "In other Data skills I took a Biology Computational Lab where I used R on Datasets to prove/disprove a hypothesis",
        "I've also trained AI models using Hugging Face and Python with Google Colab to create a chatbot that talks like me based on my texts"
@@ -60,8 +60,8 @@
     "type": "comment",
     "meta": "commented",
     "paragraphs": [
-      "<strong> Backend Skills</strong>",
-      " I have experience building backend systems with FASTAPI, PHP and Node.JS,", 
+      "<strong>Backend Skills</strong>",
+      "I have experience building backend systems with FastAPI, PHP, and Node.js.",
       "Specifically I've made two REST APIs for both an open contribution cookbook app and a ride sharing website."
     ]
   },
@@ -82,9 +82,9 @@
     "paragraphs": [
       "<strong>Languages I know overview</strong>",
       "I've got experience in a number of languages",
-      "For starters I took and passed Data Structures and Algorithms in C/C++, 10 hr/week homeworks demanded optimized, quality code",
+      "For starters I took and passed Data Structures and Algorithms in C/C++, 10 hr/week homework demanded optimized, quality code",
       "I have college credit in Java through AP Computer Science A as well as experience with it in FTC robotics",
-      "I'm deeply experienced in Python and Javascript/Typescript in a number of scenarios including backend, automation and AI training",
+      "I'm deeply experienced in Python and JavaScript/TypeScript in a number of scenarios including backend, automation and AI training",
       "I also have an unhealthy obsession with Google Apps Script, it's fantastic for automation everyone should learn it"
     ]
   },
@@ -103,10 +103,10 @@
     "meta": "commented",
     "paragraphs": [
       "<strong>Python</strong>",
-      "One of my side projects is creating an LLM that talks like me which I am doing ussign hugging face and python, It trains of my texts which is converted into training data by another python script I wrote to extract and organize into conversations in a set format ",
-      "Anthor past project was writing a compilier which I consider near turing complete because I was able to make compile and run a BrainF*Ck(an odd programming language look it up)  compilier in it ",
-      "Ive also used it in Webdev developing a FASTAPI restAPI for a carpooling app ",
-      "A number of discord bots Ive made also use discord.py wher I built a relay from google sheets so it could be related into a discord server using discord.py"
+      "One of my side projects is creating an LLM that talks like me, which I am doing using Hugging Face and Python. It trains on my texts, which are converted into training data by another Python script I wrote to extract and organize them into conversations in a set format.",
+      "Another past project was writing a compiler which I consider near Turing complete — I was able to make it compile and run a BrainF*ck interpreter within it (an odd programming language, look it up).",
+      "I've also used it in web development, building a FastAPI REST API for a carpooling app.",
+      "A number of Discord bots I've made also use discord.py where I built a relay from Google Sheets so it could be relayed into a Discord server using discord.py"
     ]
   },
   {
@@ -123,7 +123,7 @@
     "type": "push",
     "commits": [
       {
-        "message": "The compilier",
+        "message": "The compiler",
         "sha": "tsOLD",
         "url": "https://github.com/0ce10tsgit/wierd_lang"
 
@@ -134,7 +134,7 @@
     "type": "comment",
     "meta": "commented",
     "paragraphs": [
-      "<strong> Use of AI in development</strong>",
+      "<strong>Use of AI in development</strong>",
       "I believe that AI is a powerful and useful tool when used in the correct scenarios and ways",
       "I follow the basic principle of 'if you can't explain how it works then don't use it' except that doesn't happen often because I do iterative, conversational development",
       "With skills you have knowledge of, it is deeply helpful in increasing productivity as well as being good for debugging. When in unknown territory it is a fantastic learning tool. If you don't understand what it did, talk to it until you do",
@@ -147,7 +147,7 @@
     "meta": "commented",
     "paragraphs": [
       "<strong>Conclusion</strong>",
-      "I hope this PR has convinced you to hire me, I have done a lot and intend to do a lot more and I definitly covered not all of it here, if I am an applicant you have my contact info and asking about my skills in context of what you need is something I am very open to and would love to talk about",
+      "I hope this PR has convinced you to hire me. I have done a lot and intend to do a lot more, and I definitely haven't covered all of it here. If I am an applicant, you have my contact info — I am very open to discussing my skills in the context of what you need and would love to talk.",
       "Thanks for reading"
     ]
   }
