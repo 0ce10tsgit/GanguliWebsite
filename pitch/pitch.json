@@ -82,10 +82,10 @@
     "paragraphs": [
       "<strong>Languages I know overview</strong>",
       "I've got experience in a number of languages",
-      "For starters I took and passed Data Structures and Algorithms in C/C++, 10 hr/week homework demanded optimized, quality code",
+      "For starters, I took and passed Data Structures and Algorithms in C/C++. The 10 hr/week homework demanded optimized, quality code.",
       "I have college credit in Java through AP Computer Science A as well as experience with it in FTC robotics",
       "I'm deeply experienced in Python and JavaScript/TypeScript in a number of scenarios including backend, automation and AI training",
-      "I also have an unhealthy obsession with Google Apps Script, it's fantastic for automation everyone should learn it"
+      "I also have an unhealthy obsession with Google Apps Script. It's fantastic for automation and everyone should learn it."
     ]
   },
   {
@@ -104,9 +104,9 @@
     "paragraphs": [
       "<strong>Python</strong>",
       "One of my side projects is creating an LLM that talks like me, which I am doing using Hugging Face and Python. It trains on my texts, which are converted into training data by another Python script I wrote to extract and organize them into conversations in a set format.",
-      "Another past project was writing a compiler which I consider near Turing complete — I was able to make it compile and run a BrainF*ck interpreter within it (an odd programming language, look it up).",
+      "Another past project was writing a compiler I consider near Turing complete. I was able to make it compile and run a BrainF*ck interpreter within it (an odd programming language, look it up).",
       "I've also used it in web development, building a FastAPI REST API for a carpooling app.",
-      "A number of Discord bots I've made also use discord.py where I built a relay from Google Sheets so it could be relayed into a Discord server using discord.py"
+      "A number of Discord bots I've made use discord.py. One notable one relays data from Google Sheets into a Discord server."
     ]
   },
   {
@@ -136,7 +136,7 @@
     "paragraphs": [
       "<strong>Use of AI in development</strong>",
       "I believe that AI is a powerful and useful tool when used in the correct scenarios and ways",
-      "I follow the basic principle of 'if you can't explain how it works then don't use it' except that doesn't happen often because I do iterative, conversational development",
+      "I follow the basic principle of 'if you can't explain how it works, don't use it.' That rarely comes up because I do iterative, conversational development.",
       "With skills you have knowledge of, it is deeply helpful in increasing productivity as well as being good for debugging. When in unknown territory it is a fantastic learning tool. If you don't understand what it did, talk to it until you do",
       "I'm proud to have retained knowledge of how to do things without AI as well as practicing those skills often (academics), but I have experience with workflows in Claude Code that I find have me shipping faster",
       "This website is actually one of the places I use Claude Code in development to help me learn better frontend" 
@@ -147,7 +147,7 @@
     "meta": "commented",
     "paragraphs": [
       "<strong>Conclusion</strong>",
-      "I hope this PR has convinced you to hire me. I have done a lot and intend to do a lot more, and I definitely haven't covered all of it here. If I am an applicant, you have my contact info — I am very open to discussing my skills in the context of what you need and would love to talk.",
+      "I hope this PR has convinced you to hire me. I have done a lot and intend to do a lot more, and I definitely haven't covered all of it here. If I am an applicant, you have my contact info. I am very open to discussing my skills in the context of what you need and would love to talk.",
       "Thanks for reading"
     ]
   }
