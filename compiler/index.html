@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>wierd lang IDE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+  <style>
+    :root {
+      --bg: #000;
+      --surface: #0d0d0d;
+      --surface2: #141414;
+      --border: #1e1e1e;
+      --border2: #2a2a2a;
+      --accent: #e64f4f;
+      --accent-dim: rgba(230,79,79,0.15);
+      --text: #e8e8e8;
+      --muted: #555;
+      --muted2: #333;
+      --success: #4ec9b0;
+      --warning: #ce9178;
+      --sidebar-w: 220px;
+      --terminal-h: 220px;
+      --header-h: 40px;
+      --font-ui: 'Inter', system-ui, sans-serif;
+      --font-code: 'JetBrains Mono', monospace;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); }
+
+    /* ── LAYOUT ── */
+    #app { display: flex; height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      overflow: hidden;
+      transition: transform 0.25s ease;
+      z-index: 50;
+    }
+    #sidebar-header {
+      padding: 16px 14px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    #back-btn {
+      font-family: var(--font-code);
+      font-size: 22px;
+      color: #888;
+      text-decoration: none;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    #back-btn:hover { color: var(--accent); }
+    #sidebar-logo {
+      font-family: var(--font-code);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+    #sidebar-version {
+      font-family: var(--font-ui);
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 2px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    #sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .stab {
+      flex: 1;
+      padding: 9px 0;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      transition: color 0.15s;
+    }
+    .stab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+    .stab:hover:not(.active) { color: var(--text); }
+
+    #sidebar-content { flex: 1; overflow-y: auto; }
+    #sidebar-content::-webkit-scrollbar { width: 4px; }
+    #sidebar-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    .panel { display: none; padding: 8px 0; }
+    .panel.active { display: block; }
+
+    /* wiki accordion */
+    .wiki-section { border-bottom: 1px solid var(--border); }
+    .wiki-section summary {
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 14px;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      transition: color 0.15s;
+      user-select: none;
+    }
+    .wiki-section summary::before { content: '▶'; font-size: 8px; transition: transform 0.2s; }
+    .wiki-section[open] summary::before { transform: rotate(90deg); }
+    .wiki-section[open] summary { color: var(--text); }
+    .wiki-section summary:hover { color: var(--text); }
+    .wiki-body {
+      padding: 0 14px 12px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      color: #999;
+      line-height: 1.6;
+    }
+    .wiki-body code {
+      font-family: var(--font-code);
+      font-size: 11px;
+      color: var(--success);
+      background: var(--surface2);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    .wiki-body pre {
+      font-family: var(--font-code);
+      font-size: 11px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 8px 10px;
+      margin-top: 6px;
+      overflow-x: auto;
+      color: #ccc;
+      line-height: 1.7;
+    }
+    .kw { color: var(--accent); }
+    .val { color: #9cdcfe; }
+    .cmt { color: var(--muted); }
+
+    /* examples list */
+    .example-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 14px;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      color: var(--muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      transition: color 0.15s, background 0.15s;
+    }
+    .example-item::before { content: '◈'; font-size: 10px; color: var(--muted2); }
+    .example-item:hover { color: var(--text); background: var(--accent-dim); }
+    .example-item:hover::before { color: var(--accent); }
+
+    #sidebar-footer {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+    }
+    #run-sidebar {
+      width: 100%;
+      padding: 9px;
+      background: transparent;
+      color: var(--accent);
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      border: 1px solid var(--accent);
+      border-radius: 0;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    #run-sidebar:hover { background: var(--accent); color: #fff; }
+    #run-sidebar:hover { opacity: 0.85; }
+    #run-sidebar:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── MAIN ── */
+    #main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+
+    #editor-header {
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    #tab-bar { display: flex; align-items: center; gap: 0; }
+    #active-tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 14px;
+      height: var(--header-h);
+      font-family: var(--font-code);
+      font-size: 12px;
+      color: var(--text);
+      border-top: 2px solid var(--accent);
+      background: var(--bg);
+    }
+    #status-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-code);
+      font-size: 11px;
+      color: var(--muted);
+    }
+    #pyodide-status {
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      font-size: 10px;
+    }
+    #pyodide-status.loading { background: #2a2200; color: #f5c518; }
+    #pyodide-status.ready   { background: #0d2b1e; color: #4ec9b0; }
+    #pyodide-status.running { background: #1e0a0a; color: var(--accent); }
+    #pyodide-status.error   { background: #2b0d0d; color: #f48771; }
+
+    #editor-wrap { flex: 1; overflow: hidden; position: relative; }
+    .cm-editor { height: 100% !important; }
+    .cm-scroller { overflow: auto !important; height: 100% !important; }
+
+    /* ── TERMINAL ── */
+    #terminal-panel {
+      height: var(--terminal-h);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+    }
+    #terminal-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      padding: 0 4px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .ttab {
+      padding: 6px 14px;
+      font-family: var(--font-ui);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      transition: color 0.15s;
+      margin-bottom: -1px;
+    }
+    .ttab.active { color: var(--text); border-bottom-color: var(--accent); }
+    .ttab:hover:not(.active) { color: #888; }
+
+    #terminal-output {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 14px;
+      font-family: var(--font-code);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+    #terminal-output::-webkit-scrollbar { width: 4px; }
+    #terminal-output::-webkit-scrollbar-thumb { background: var(--border2); }
+
+    .t-prompt { color: var(--accent); }
+    .t-info    { color: var(--muted); }
+    .t-out     { color: #c8e6c9; }
+    .t-err     { color: #f48771; }
+    .t-unknown { color: var(--warning); }
+    .t-input   { color: #9cdcfe; }
+    .t-warn    { color: #e5a50a; }
+    .t-cursor  { display: inline-block; width: 8px; height: 14px; background: var(--accent); vertical-align: middle; animation: blink 1s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* ── ABOUT BUTTON ── */
+    #about-btn {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      background: transparent;
+      color: var(--accent);
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border: 1px solid var(--accent);
+      border-radius: 0;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    #about-btn:hover { background: var(--accent); color: #fff; }
+
+    /* ── HAMBURGER ── */
+    #hamburger {
+      display: none;
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      z-index: 200;
+      width: 36px;
+      height: 36px;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 16px;
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+    }
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 49;
+    }
+    #overlay.show { display: block; }
+
+    /* ── ABOUT MODAL ── */
+    #about-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0,0,0,0.7);
+    }
+    #about-modal.show { display: flex; }
+    #about-card {
+      background: rgba(14,14,14,0.97);
+      border: 1px solid var(--accent);
+      border-radius: 0;
+      width: min(820px, 90vw);
+      max-height: 80vh;
+      overflow-y: auto;
+      padding: 32px 36px;
+      animation: popIn 0.2s ease;
+    }
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    #about-card::-webkit-scrollbar { width: 4px; }
+    #about-card::-webkit-scrollbar-thumb { background: var(--border2); }
+    #about-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    #about-title {
+      font-family: var(--font-code);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    #about-close {
+      background: none;
+      border: 1px solid var(--border2);
+      color: var(--muted);
+      font-size: 16px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border-radius: 0;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #about-close:hover { border-color: var(--accent); color: var(--accent); }
+    #about-body p {
+      font-family: var(--font-ui);
+      font-size: 14px;
+      color: #999;
+      line-height: 1.8;
+      margin-bottom: 16px;
+    }
+    #about-body p:last-child { margin-bottom: 0; }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      #sidebar {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        transform: translateX(-100%);
+        width: min(var(--sidebar-w), 85vw);
+      }
+      #sidebar.open { transform: translateX(0); }
+      #hamburger { display: flex; }
+      #editor-header { padding-left: 52px; }
+      #about-btn { bottom: 16px; right: 16px; padding: 8px 14px; font-size: 11px; }
+:root { --terminal-h: 180px; }
+    }
+  </style>
+</head>
+<body>
+
+<button id="hamburger" aria-label="Menu">☰</button>
+<div id="overlay"></div>
+
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <div id="sidebar-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <a href="../" id="back-btn" title="Back">←</a>
+        <div>
+          <div id="sidebar-logo">WIERD LANG</div>
+          <div id="sidebar-version">v2</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="sidebar-tabs">
+      <button class="stab active" data-panel="wiki">Wiki</button>
+      <button class="stab" data-panel="examples">Examples</button>
+    </div>
+
+    <div id="sidebar-content">
+      <!-- WIKI PANEL -->
+      <div id="panel-wiki" class="panel active">
+
+        <details class="wiki-section">
+          <summary>Basic Syntax</summary>
+          <div class="wiki-body">
+            Commands are one per line. Chain multiple with <code>&amp;</code>.
+            Lines starting with <code>//</code> are comments.
+            <pre><span class="kw">print</span> Hello world
+<span class="kw">var</span> x <span class="val">10</span> <span class="cmt">// set x to 10</span>
+<span class="kw">print</span> $x <span class="kw">&amp;</span> <span class="kw">var</span> x <span class="val">20</span></pre>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>Value Prefixes</summary>
+          <div class="wiki-body">
+            <pre><span class="val">$name</span>         variable
+<span class="val">^arr|0</span>        array element
+<span class="val">(5+$x)</span>        math
+<span class="val">{randint|1|6}</span> inline func
+<span class="val">*literal</span>      no evaluation
+<span class="val">_</span>             space character</pre>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>Variables</summary>
+          <div class="wiki-body">
+            <pre><span class="kw">var</span> name value
+<span class="kw">var</span> x <span class="val">10</span>
+<span class="kw">var</span> msg Hello there
+<span class="kw">var</span> result <span class="val">($x+5)</span>
+<span class="kw">var</span> roll <span class="val">{randint|1|6}</span></pre>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>Arrays</summary>
+          <div class="wiki-body">
+            <pre><span class="kw">array</span> fruits apple banana cherry
+<span class="kw">print</span> <span class="val">^fruits|1</span>        <span class="cmt">→ apple</span>
+<span class="kw">append</span> fruits mango
+<span class="kw">insert</span> fruits 1 kiwi
+<span class="kw">for</span> item <span class="kw">in</span> fruits <span class="kw">print</span> $item
+<span class="kw">trash</span> array fruits</pre>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>Functions</summary>
+          <div class="wiki-body">
+            Simple (no params):
+            <pre><span class="kw">fn</span> greet <span class="kw">print</span> Hello!
+<span class="kw">run</span> greet</pre>
+            With params:
+            <pre><span class="kw">define</span> add a|b <span class="kw">print</span> <span class="val">($a+$b)</span>
+<span class="kw">call</span> add <span class="val">5</span> <span class="val">3</span></pre>
+            No params with <code>define</code>: use <code>|</code> alone.
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>Control Flow</summary>
+          <div class="wiki-body">
+            <pre><span class="kw">if</span> $x &gt; <span class="val">10</span> <span class="kw">print</span> big
+<span class="kw">while</span> $i &lt; <span class="val">5</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i+1)</span>
+<span class="kw">repeat</span> <span class="val">3</span> <span class="kw">print</span> hi
+<span class="kw">for</span> x <span class="kw">in</span> arr <span class="kw">print</span> $x</pre>
+            Operators: <code>&lt;</code> <code>&gt;</code> <code>==</code> <code>!=</code> <code>&lt;=</code> <code>&gt;=</code>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>Math</summary>
+          <div class="wiki-body">
+            Wrap in <code>()</code>. Evaluated left-to-right, no precedence.
+            <pre><span class="val">(10+5)</span>       <span class="cmt">→ 15</span>
+<span class="val">($x*$y)</span>      <span class="cmt">→ x times y</span>
+<span class="val">(2+3*4)</span>      <span class="cmt">→ 20, not 14</span></pre>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>Input</summary>
+          <div class="wiki-body">
+            Prompts the user and stores their response in a variable.
+            <pre><span class="kw">input</span> name What is your name?
+<span class="kw">print</span> Hello $name</pre>
+            First arg is the variable name, everything after is the prompt text.
+            Note: don't attach punctuation directly to <code>$name</code> — use a space before it.
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>Utilities</summary>
+          <div class="wiki-body">
+            <pre><span class="kw">randint</span> x <span class="val">1</span> <span class="val">100</span>   <span class="cmt">store random</span>
+<span class="kw">sleep</span> <span class="val">1</span>            <span class="cmt">pause 1 second</span>
+<span class="kw">concat</span> s $a _ $b   <span class="cmt">join strings</span>
+<span class="kw">clear</span>              <span class="cmt">clear terminal</span>
+<span class="kw">terminate</span>          <span class="cmt">stop program</span></pre>
+          </div>
+        </details>
+
+      </div><!-- /wiki panel -->
+
+      <!-- EXAMPLES PANEL -->
+      <div id="panel-examples" class="panel">
+        <button class="example-item" data-example="hello">Hello World</button>
+        <button class="example-item" data-example="counter">Counter Loop</button>
+        <button class="example-item" data-example="fibonacci">Fibonacci</button>
+        <button class="example-item" data-example="timestable">Times Table</button>
+        <button class="example-item" data-example="arrays">Array Demo</button>
+        <button class="example-item" data-example="functions">Functions</button>
+        <button class="example-item" data-example="userinput">User Input</button>
+      </div>
+    </div><!-- /sidebar-content -->
+
+    <div id="sidebar-footer">
+      <button id="run-sidebar" disabled>▶ RUN</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main id="main">
+    <div id="editor-header">
+      <div id="tab-bar">
+        <div id="active-tab">main.wierd</div>
+      </div>
+      <div id="status-bar">
+        <span id="cursor-pos">LN 1, COL 1</span>
+        <span id="pyodide-status" class="loading">LOADING</span>
+      </div>
+    </div>
+
+    <div id="editor-wrap"></div>
+
+    <div id="terminal-panel">
+      <div id="terminal-tabs">
+        <button class="ttab active">TERMINAL</button>
+      </div>
+      <div id="terminal-output">
+        <span class="t-prompt">→</span> <span class="t-info">wierd lang ready — loading pyodide...</span><br>
+        <span class="t-cursor"></span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<button id="about-btn">ABOUT</button>
+
+<div id="about-modal">
+  <div id="about-card">
+    <div id="about-header">
+      <span id="about-title">WIERD LANG</span>
+      <button id="about-close">✕</button>
+    </div>
+    <div id="about-body">
+      <p>This is a compiler I developed my freshman year when I was 14 in high school, I had zero life then if its not abundantly clear</p>
+      <p>It was my third ever programming project and took months with multiple restarts</p>
+      <p>The end result has many quirks and bugs but it holds up and I think its one of the projects that made me a good developer</p>
+      <p>The following is the language modified to run in the browser just to showcase it because I still remain proud of it</p>
+      <p>With pyodide it runs using your resources so feel free to experiment (if it doesnt crash on you)</p>
+      <p>I also misspelled the word weird repeatedly when making it so now I consider it branding and refuse to change it</p>
+
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { basicSetup, EditorView } from "https://esm.sh/codemirror@6.0.1";
+import { keymap } from "https://esm.sh/@codemirror/view@6";
+import { indentWithTab } from "https://esm.sh/@codemirror/commands@6";
+import { EditorState } from "https://esm.sh/@codemirror/state@6";
+
+// ── EXAMPLES ──────────────────────────────────────────────────────────────
+const EXAMPLES = {
+  hello: `// Hello World
+print Hello, World!
+print Welcome to wierd lang v2`,
+
+  counter: `// Counter Loop
+var i 0
+while $i < 5 print Count: $i & var i ($i+1)
+print Done!`,
+
+  fibonacci: `// Fibonacci Sequence
+var a 0
+var b 1
+var count 0
+print Fibonacci:
+while $count < 10 print $a & var temp $b & var b ($a+$b) & var a $temp & var count ($count+1)`,
+
+  timestable: `// Times Table
+define timestable n|x var i 1 & while $i <= 10 print $n x $i = ($n*$i) & var i ($i+1)
+call timestable 7 x`,
+
+  arrays: `// Array Demo
+array fruits apple banana cherry mango
+print Fruits list:
+for item in fruits print  - $item
+append fruits kiwi
+print After append:
+print ^fruits|`,
+
+  userinput: `// User Input
+input name What is your name?
+print Hello $name
+input age How old are you?
+var next ($age+1)
+print Next year you will be $next years old`,
+
+  functions: `// Functions
+define greet name | print Hello, $name!
+define square n | var r ($n*$n) & print $n squared is $r
+
+call greet World
+call greet wierd lang
+call square 7
+call square 12`,
+};
+
+// ── CODEMIRROR THEME ──────────────────────────────────────────────────────
+const sealTheme = EditorView.theme({
+  "&": { backgroundColor: "#000", color: "#d4d4d4", height: "100%" },
+  ".cm-content": {
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: "13px",
+    lineHeight: "1.7",
+    padding: "8px 0",
+    caretColor: "#e64f4f",
+  },
+  ".cm-cursor": { borderLeftColor: "#e64f4f !important", borderLeftWidth: "2px" },
+  ".cm-selectionBackground": { backgroundColor: "rgba(230,79,79,0.2) !important" },
+  "::selection": { backgroundColor: "rgba(230,79,79,0.2)" },
+  ".cm-gutters": {
+    backgroundColor: "#080808",
+    color: "#3a3a3a",
+    border: "none",
+    borderRight: "1px solid #1a1a1a",
+  },
+  ".cm-lineNumbers .cm-gutterElement": {
+    fontFamily: "'JetBrains Mono', monospace",
+    fontSize: "11px",
+    padding: "0 10px 0 6px",
+  },
+  ".cm-activeLine": { backgroundColor: "rgba(255,255,255,0.03)" },
+  ".cm-activeLineGutter": { backgroundColor: "rgba(255,255,255,0.02)" },
+  ".cm-foldGutter": { display: "none" },
+  ".cm-matchingBracket": { backgroundColor: "rgba(230,79,79,0.25)", outline: "none" },
+}, { dark: true });
+
+// ── EDITOR SETUP ──────────────────────────────────────────────────────────
+const posEl = document.getElementById('cursor-pos');
+
+const view = new EditorView({
+  state: EditorState.create({
+    doc: EXAMPLES.hello,
+    extensions: [
+      basicSetup,
+      keymap.of([indentWithTab]),
+      sealTheme,
+      EditorView.updateListener.of(update => {
+        const cursor = update.state.selection.main.head;
+        const line = update.state.doc.lineAt(cursor);
+        posEl.textContent = `LN ${line.number}, COL ${cursor - line.from + 1}`;
+      }),
+    ],
+  }),
+  parent: document.getElementById('editor-wrap'),
+});
+
+// ── PYODIDE INIT ──────────────────────────────────────────────────────────
+const statusEl  = document.getElementById('pyodide-status');
+const termEl    = document.getElementById('terminal-output');
+const runBtns   = [document.getElementById('run-sidebar')];
+
+let pyodide = null;
+let isRunning = false;
+
+function setStatus(state, label) {
+  statusEl.className = state;
+  statusEl.textContent = label;
+}
+
+function termLine(html) {
+  const cursor = termEl.querySelector('.t-cursor');
+  const line = document.createElement('div');
+  line.innerHTML = html;
+  if (cursor) termEl.insertBefore(line, cursor);
+  else termEl.appendChild(line);
+  termEl.scrollTop = termEl.scrollHeight;
+}
+
+function termClear() {
+  termEl.innerHTML = '<span class="t-cursor"></span>';
+}
+
+async function initPyodide() {
+  try {
+    pyodide = await loadPyodide();
+    const res = await fetch('../stupidlang/lang_web.py');
+    if (!res.ok) throw new Error('Could not load lang_web.py');
+    const src = await res.text();
+    await pyodide.runPythonAsync(src);
+    setStatus('ready', 'READY');
+    termLine(`<span class="t-prompt">→</span> <span class="t-info">pyodide loaded · wierd lang ready</span>`);
+    runBtns.forEach(b => b.disabled = false);
+  } catch (e) {
+    setStatus('error', 'ERROR');
+    termLine(`<span class="t-err">[ERROR] Failed to load: ${e.message}</span>`);
+  }
+}
+
+// ── TOKEN WARNING ─────────────────────────────────────────────────────────
+function detectBadTokens(line) {
+  if (/\$\w*[^\w\s]/.test(line)) return 'oversight by 14yr old oyon, print cannot handle reserved tokens inline ($, {, }, ^, (, ) *, _ )';
+  if (/\$[a-zA-Z_]\w+/.test(line)) return '$variable — may be unresolved';
+  if (/\{/.test(line))  return '{ — inline func syntax';
+  if (/\^/.test(line))  return '^ — array access syntax';
+  if (/\(.*\)/.test(line)) return '( ) — math expression syntax';
+  return null;
+}
+
+// ── RUN ───────────────────────────────────────────────────────────────────
+async function runCode() {
+  if (!pyodide || isRunning) return;
+  isRunning = true;
+  runBtns.forEach(b => b.disabled = true);
+  setStatus('running', 'RUNNING');
+
+  const code = view.state.doc.toString();
+  const t0 = performance.now();
+
+  termLine(`<span class="t-prompt">→</span> <span class="t-info">wierd lang run · ${new Date().toLocaleTimeString()}</span>`);
+
+  try {
+    pyodide.globals.set('_user_code', code);
+    const raw = await pyodide.runPythonAsync('run_script(_user_code)');
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(2);
+    const lines = raw ? raw.split('\n') : [];
+
+    for (const line of lines) {
+      if (line === '\x00CLEAR\x00') {
+        termClear();
+        continue;
+      }
+      let cls = 't-out';
+      if (line.startsWith('[ERROR]'))   cls = 't-err';
+      else if (line.startsWith('failed:') || line.startsWith('[UNKNOWN')) cls = 't-unknown';
+      else if (line.startsWith('INPUT>')) cls = 't-input';
+      const badTokens = detectBadTokens(line);
+      termLine(`<span class="${cls}">${escHtml(line)}</span>${badTokens ? ` <span class="t-warn" title="language warning: 14yr old oyon made this">⚠ unresolved token: ${escHtml(badTokens)}</span>` : ''}`);
+    }
+
+    termLine(`<span class="t-info">── done in ${elapsed}s ──</span>`);
+    setStatus('ready', 'READY');
+  } catch (e) {
+    termLine(`<span class="t-err">[RUNTIME ERROR] ${escHtml(e.message)}</span>`);
+    setStatus('error', 'ERROR');
+    setTimeout(() => setStatus('ready', 'READY'), 3000);
+  }
+
+  isRunning = false;
+  runBtns.forEach(b => b.disabled = false);
+}
+
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+// ── SIDEBAR TABS ──────────────────────────────────────────────────────────
+document.querySelectorAll('.stab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.stab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.panel).classList.add('active');
+  });
+});
+
+// ── EXAMPLE BUTTONS ───────────────────────────────────────────────────────
+document.querySelectorAll('.example-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const code = EXAMPLES[btn.dataset.example];
+    if (!code) return;
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: code }
+    });
+    // close sidebar on mobile
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('show');
+  });
+});
+
+// ── RUN BUTTONS ───────────────────────────────────────────────────────────
+runBtns.forEach(b => b.addEventListener('click', runCode));
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); runCode(); }
+});
+
+// ── HAMBURGER ─────────────────────────────────────────────────────────────
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+document.getElementById('hamburger').addEventListener('click', () => {
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+});
+overlay.addEventListener('click', () => {
+  sidebar.classList.remove('open');
+  overlay.classList.remove('show');
+});
+
+// ── ABOUT ────────────────────────────────────────────────────────────────
+const aboutModal = document.getElementById('about-modal');
+document.getElementById('about-btn').addEventListener('click', () => aboutModal.classList.add('show'));
+document.getElementById('about-close').addEventListener('click', () => aboutModal.classList.remove('show'));
+aboutModal.addEventListener('click', e => { if (e.target === aboutModal) aboutModal.classList.remove('show'); });
+
+// ── BOOT ─────────────────────────────────────────────────────────────────
+aboutModal.classList.add('show');
+initPyodide();
+</script>
+</body>
+</html>

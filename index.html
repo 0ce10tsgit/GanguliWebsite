@@ -55,7 +55,7 @@
             color: #fff;
             font-size: 14px;
             padding: 10px 14px;
-            border-radius: 6px;
+            border-radius: 0;
             max-width: 260px;
             z-index: 100;
             pointer-events: none;
@@ -127,6 +127,7 @@
 
 <div id="bottom-bar">
     <div class="btn-row">
+        <a class="dining-btn" href="compiler/">WIERD LANG</a>
         <a class="dining-btn" href="dining/login.php">RPI DINING</a>
         <a class="dining-btn" href="pitch/pitch.html">Elevator Pitch</a>
     </div>
@@ -176,7 +177,7 @@ const PARTICLE_COUNT  = isMobile ? 30 : 80;
 const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
 const TRAIL_LEN       = isMobile ? 6 : 10;
 const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
-const STEP_INTERVAL   = isMobile ? 16 : 10;   // mobile: slower particle updates
+const STEP_INTERVAL   = isMobile ? 12 : 7;   // mobile: slower particle updates
 const SPAWN_RADIUS    = 120;  // canvas px from center to sample spawn pool from
 const LIFETIME_MIN    = 300;  // frames before forced respawn (~5s)
 const LIFETIME_MAX    = 1000;  // frames before forced respawn (~10s)
