@@ -602,7 +602,7 @@
         <button class="ttab active">TERMINAL</button>
       </div>
       <div id="terminal-output">
-        <span class="t-prompt">→</span> <span class="t-info">wierd lang ready — loading pyodide...</span><br>
+        <span class="t-prompt">→</span> <span class="t-info">wierd lang loaded successfully</span><br>
         <span class="t-cursor"></span>
       </div>
     </div>
@@ -766,7 +766,7 @@ async function initPyodide() {
     const src = await res.text();
     await pyodide.runPythonAsync(src);
     setStatus('ready', 'READY');
-    termLine(`<span class="t-prompt">→</span> <span class="t-info">pyodide loaded · wierd lang ready</span>`);
+    termLine(`<span class="t-prompt">→</span> <span class="t-info">pyodide loaded good to go!</span>`);
     runBtns.forEach(b => b.disabled = false);
   } catch (e) {
     setStatus('error', 'ERROR');
