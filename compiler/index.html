@@ -65,14 +65,6 @@
       color: var(--accent);
       letter-spacing: 0.05em;
     }
-    #sidebar-version {
-      font-family: var(--font-ui);
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 2px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
     #sidebar-tabs {
       display: flex;
       border-bottom: 1px solid var(--border);
@@ -231,18 +223,6 @@
       font-size: 11px;
       color: var(--muted);
     }
-    #pyodide-status {
-      padding: 2px 8px;
-      border-radius: 3px;
-      font-weight: 500;
-      letter-spacing: 0.05em;
-      font-size: 10px;
-    }
-    #pyodide-status.loading { background: #2a2200; color: #f5c518; }
-    #pyodide-status.ready   { background: #0d2b1e; color: #4ec9b0; }
-    #pyodide-status.running { background: #1e0a0a; color: var(--accent); }
-    #pyodide-status.error   { background: #2b0d0d; color: #f48771; }
-
     #editor-wrap { flex: 1; overflow: hidden; position: relative; }
     .cm-editor { height: 100% !important; }
     .cm-scroller { overflow: auto !important; height: 100% !important; }
@@ -326,6 +306,7 @@
       transition: background 0.15s, color 0.15s;
     }
     #about-btn:hover { background: var(--accent); color: #fff; }
+    #about-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
     /* ── HAMBURGER ── */
     #hamburger {
@@ -446,10 +427,7 @@
     <div id="sidebar-header">
       <div style="display:flex;align-items:center;gap:10px;">
         <a href="../" id="back-btn" title="Back">←</a>
-        <div>
-          <div id="sidebar-logo">WIERD LANG</div>
-          <div id="sidebar-version">v2</div>
-        </div>
+        <div id="sidebar-logo">WIERD LANG</div>
       </div>
     </div>
 
@@ -471,23 +449,6 @@
 <span class="kw">var</span> x <span class="val">10</span>          <span class="cmt">// set x</span>
 <span class="kw">print</span> $x <span class="kw">&amp;</span> <span class="kw">var</span> x <span class="val">20</span> <span class="cmt">// chain</span></pre>
             Inside <code>fn</code>/<code>define</code> bodies use <code>&amp;&amp;</code> to chain instead — <code>&amp;</code> is reserved for control flow bodies there.
-          </div>
-        </details>
-
-        <details class="wiki-section" style="border-left: 2px solid var(--accent);">
-          <summary style="color: var(--warning);">&amp;&amp; vs &amp; — Know the Difference</summary>
-          <div class="wiki-body">
-            There are two chain operators and they are <b>not interchangeable</b>:
-            <br><br>
-            <code>&amp;</code> — chains commands inside a <b>control flow body</b> (<code>while</code>, <code>if</code>, <code>for</code>, <code>repeat</code>):<br>
-            <pre><span class="kw">while</span> $i &lt; <span class="val">5</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i+1)</span>
-<span class="kw">if</span> $x &gt; <span class="val">0</span> <span class="kw">print</span> positive <span class="kw">&amp;</span> <span class="kw">var</span> found <span class="val">true</span></pre>
-            <code>&amp;&amp;</code> — chains commands inside a <b>function body</b> (<code>fn</code>, <code>define</code>):<br>
-            <pre><span class="kw">fn</span> greet <span class="kw">print</span> Hi <span class="kw">&amp;&amp;</span> <span class="kw">print</span> Bye
-<span class="kw">define</span> countdown n <span class="kw">var</span> i $n <span class="kw">&amp;&amp;</span> <span class="kw">while</span> $i &gt; <span class="val">0</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i-1)</span></pre>
-            <b>Why this matters:</b> if you use <code>&amp;</code> inside a <code>define</code> body that also contains a <code>while</code>, the interpreter can't tell where the while body ends — it cuts the loop short. The second example above shows the correct pattern: <code>&amp;&amp;</code> between function-level statements, <code>&amp;</code> for the while body.
-            <br><br>
-            <span style="color: var(--accent);">Rule of thumb:</span> writing a <code>fn</code> or <code>define</code>? use <code>&amp;&amp;</code>. Writing a loop or conditional body? use <code>&amp;</code>.
           </div>
         </details>
 
@@ -547,32 +508,33 @@
         </details>
 
         <details class="wiki-section">
-          <summary>fn / run — Simple Functions</summary>
+          <summary>Functions without args</summary>
           <div class="wiki-body">
-            No parameters. Use <code>&amp;&amp;</code> to chain commands in the body:
+            <code>fn</code> + <code>run</code>. No parameters.
             <pre><span class="kw">fn</span> greet <span class="kw">print</span> Hello <span class="kw">&amp;&amp;</span> <span class="kw">print</span> World
 <span class="kw">run</span> greet</pre>
-            Works with loops — <code>&amp;</code> inside a while body is safe here:
+            <div style="border-left:2px solid var(--accent);padding:5px 10px;margin:8px 0;background:var(--accent-dim);line-height:1.8;">
+              Use <code>&amp;&amp;</code> between statements in the body.<br>
+              Use <code>&amp;</code> only inside loop/if bodies within the function.
+            </div>
             <pre><span class="kw">fn</span> count var i 0 <span class="kw">&amp;&amp;</span> <span class="kw">while</span> $i &lt; <span class="val">3</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i+1)</span>
 <span class="kw">run</span> count</pre>
           </div>
         </details>
 
         <details class="wiki-section">
-          <summary>define / call — Functions with Args</summary>
+          <summary>Functions with args</summary>
           <div class="wiki-body">
-            <pre><span class="kw">define</span> name param1|param2 body
-<span class="kw">call</span> name arg1 arg2</pre>
-            Single param:
-            <pre><span class="kw">define</span> double n <span class="kw">print</span> <span class="val">($n*2)</span>
-<span class="kw">call</span> double <span class="val">7</span></pre>
-            Multiple params separated by <code>|</code>:
+            <code>define</code> + <code>call</code>. Params separated by <code>|</code>:
             <pre><span class="kw">define</span> add a|b <span class="kw">print</span> <span class="val">($a+$b)</span>
 <span class="kw">call</span> add <span class="val">5</span> <span class="val">3</span></pre>
             No params — use <code>|</code> alone:
             <pre><span class="kw">define</span> shout | <span class="kw">print</span> HELLO
 <span class="kw">call</span> shout</pre>
-            Chain commands with <code>&amp;&amp;</code>. Use <code>&amp;</code> inside loop bodies:
+            <div style="border-left:2px solid var(--accent);padding:5px 10px;margin:8px 0;background:var(--accent-dim);line-height:1.8;">
+              Use <code>&amp;&amp;</code> between statements in the body.<br>
+              Use <code>&amp;</code> only inside loop/if bodies within the function.
+            </div>
             <pre><span class="kw">define</span> countdown n var i $n <span class="kw">&amp;&amp;</span> <span class="kw">while</span> $i &gt; <span class="val">0</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i-1)</span>
 <span class="kw">call</span> countdown <span class="val">5</span></pre>
           </div>
@@ -705,11 +667,12 @@
         <button class="example-item" data-example="arrays">Array Demo</button>
         <button class="example-item" data-example="functions">Functions</button>
         <button class="example-item" data-example="userinput">User Input</button>
+        <button class="example-item" data-example="bubblesearch">Bubble Sort + Binary Search</button>
       </div>
     </div><!-- /sidebar-content -->
 
     <div id="sidebar-footer">
-      <button id="run-sidebar" disabled>▶ RUN</button>
+      <button id="run-sidebar">ABOUT</button>
     </div>
   </aside>
 
@@ -721,7 +684,6 @@
       </div>
       <div id="status-bar">
         <span id="cursor-pos">LN 1, COL 1</span>
-        <span id="pyodide-status" class="loading">LOADING</span>
       </div>
     </div>
 
@@ -739,7 +701,7 @@
   </main>
 </div>
 
-<button id="about-btn">ABOUT</button>
+<button id="about-btn" disabled>▶ RUN</button>
 
 <div id="about-modal">
   <div id="about-card">
@@ -751,7 +713,7 @@
       <p>This is a compiler I developed my freshman year when I was 14 in high school, I had zero life then if its not abundantly clear</p>
       <p>It was my third ever programming project and took months with multiple restarts</p>
       <p>The end result has many quirks and bugs but it holds up and I think its one of the projects that made me a good developer</p>
-      <p>The following is the language modified to run in the browser just to showcase it because I still remain proud of it</p>
+      <p>The following is the language modified to run in the browser just to showcase it cus I think its cool</p>
       <p>With pyodide it runs using your resources so feel free to experiment (if it doesnt crash on you)</p>
       <p>I also misspelled the word weird repeatedly when making it so now I consider it branding and refuse to change it</p>
 
@@ -802,9 +764,36 @@ input age How old are you?
 var next ($age+1)
 print Next year you will be $next years old`,
 
+  bubblesearch: `// Bubble Sort + Binary Search
+array nums 38 27 43 3 9 82 10 1 5 17
+
+print Unsorted:
+for x in nums print $x
+
+// one pass: compare adjacent pairs, swap if out of order
+define bubblepass i while $i < 10 var a ^nums|$i & var b ^nums|($i+1) & if $a > $b insert nums $i $b & if $a > $b insert nums ($i+1) $a & var i ($i+1)
+
+// 9 passes guarantees sorted for 10 elements
+repeat 9 call bubblepass 1
+
+print Sorted:
+for x in nums print $x
+
+// binary search
+var target 27
+var low 1
+var high 10
+var found false
+var mid 1
+
+while $found == false var s ($low+$high) & var mid ($s/2) & if ^nums|$mid == $target var found true & if ^nums|$mid < $target var low ($mid+1) & if ^nums|$mid > $target var high ($mid-1) & if $low > $high var found notfound
+
+if $found == true print Found $target at index $mid
+if $found == notfound print $target not in list`,
+
   functions: `// Functions
 // simple: no args, use fn + run
-fn intro print Hello from wierd lang && print made by 14yr old oyon
+fn intro print Hello from wierd lang
 run intro
 
 // with args: use define + call (use && to chain commands)
@@ -864,17 +853,13 @@ const view = new EditorView({
 });
 
 // ── PYODIDE INIT ──────────────────────────────────────────────────────────
-const statusEl  = document.getElementById('pyodide-status');
 const termEl    = document.getElementById('terminal-output');
-const runBtns   = [document.getElementById('run-sidebar')];
+const runBtns   = [document.getElementById('about-btn')];
 
 let pyodide = null;
 let isRunning = false;
 
-function setStatus(state, label) {
-  statusEl.className = state;
-  statusEl.textContent = label;
-}
+function setStatus() {}
 
 function termLine(html) {
   const cursor = termEl.querySelector('.t-cursor');
@@ -907,7 +892,7 @@ async function initPyodide() {
 
 // ── TOKEN WARNING ─────────────────────────────────────────────────────────
 function detectBadTokens(line) {
-  if (/\$\w*[^\w\s]/.test(line)) return 'oversight by 14yr old oyon, print cannot handle reserved tokens inline ($, {, }, ^, (, ) *, _ )';
+  if (/\$\w*[^\w\s]/.test(line)) return 'print cannot handle reserved tokens inline ($, {, }, ^, (, ), *, _)';
   if (/\$[a-zA-Z_]\w+/.test(line)) return '$variable — may be unresolved';
   if (/\{/.test(line))  return '{ — inline func syntax';
   if (/\^/.test(line))  return '^ — array access syntax';
@@ -943,7 +928,7 @@ async function runCode() {
       else if (line.startsWith('failed:') || line.startsWith('[UNKNOWN')) cls = 't-unknown';
       else if (line.startsWith('INPUT>')) cls = 't-input';
       const badTokens = detectBadTokens(line);
-      termLine(`<span class="${cls}">${escHtml(line)}</span>${badTokens ? ` <span class="t-warn" title="language warning: 14yr old oyon made this">⚠ unresolved token: ${escHtml(badTokens)}</span>` : ''}`);
+      termLine(`<span class="${cls}">${escHtml(line)}</span>${badTokens ? ` <span class="t-warn" title="language warning">⚠ unresolved token: ${escHtml(badTokens)}</span>` : ''}`);
     }
 
     termLine(`<span class="t-info">── done in ${elapsed}s ──</span>`);
@@ -1009,7 +994,7 @@ overlay.addEventListener('click', () => {
 
 // ── ABOUT ────────────────────────────────────────────────────────────────
 const aboutModal = document.getElementById('about-modal');
-document.getElementById('about-btn').addEventListener('click', () => aboutModal.classList.add('show'));
+document.getElementById('run-sidebar').addEventListener('click', () => aboutModal.classList.add('show'));
 document.getElementById('about-close').addEventListener('click', () => aboutModal.classList.remove('show'));
 aboutModal.addEventListener('click', e => { if (e.target === aboutModal) aboutModal.classList.remove('show'); });
 

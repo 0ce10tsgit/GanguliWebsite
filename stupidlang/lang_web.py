@@ -303,27 +303,28 @@ def manipulate(equation):
     actual_stuf.append(temp)
   sort_num = 0
   result = None
-  actual_stuf[1] = eval_key(actual_stuf[1])
-  if actual_stuf[1] == '*':
+  op = actual_stuf[1]
+  if op == '*':
     result = int(eval_key(actual_stuf[0])) * int(eval_key(actual_stuf[2]))
-  if actual_stuf[1] == '/':
-    result = int(eval_key(actual_stuf[0])) / int(eval_key(actual_stuf[2]))
-  if actual_stuf[1] == '+':
+  if op == '/':
+    result = int(eval_key(actual_stuf[0])) // int(eval_key(actual_stuf[2]))
+  if op == '+':
     result = int(eval_key(actual_stuf[0])) + int(eval_key(actual_stuf[2]))
-  if actual_stuf[1] == '-':
+  if op == '-':
     result = int(eval_key(actual_stuf[0])) - int(eval_key(actual_stuf[2]))
   if len(actual_stuf) > 3:
     remaning = actual_stuf[3:]
     sort_num = 0
     while sort_num < len(remaning):
       if sort_num % 2 == 0:
-        if eval_key(remaning[sort_num]) == '*':
+        rop = remaning[sort_num]
+        if rop == '*':
           result = result * int(eval_key(remaning[sort_num+1]))
-        elif eval_key(remaning[sort_num]) == '/':
-          result = result / int(eval_key(remaning[sort_num+1]))
-        elif eval_key(remaning[sort_num]) == '+':
+        elif rop == '/':
+          result = result // int(eval_key(remaning[sort_num+1]))
+        elif rop == '+':
           result = result + int(eval_key(remaning[sort_num+1]))
-        elif eval_key(remaning[sort_num]) == '-':
+        elif rop == '-':
           result = result - int(eval_key(remaning[sort_num+1]))
       sort_num += 1
   return result  #(1[0]+[1]1[2]2[3]-3[4])
@@ -423,7 +424,7 @@ def run_script(code):
   for line in code.split('\n'):
     if not is_doing_shit:
       break
-    if line.startswith('//'):
+    if line.startswith('//') or line.strip() == '':
       pass
     else:
       rd_line(line.rstrip())
