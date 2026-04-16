@@ -465,102 +465,232 @@
         <details class="wiki-section">
           <summary>Basic Syntax</summary>
           <div class="wiki-body">
-            Commands are one per line. Chain multiple with <code>&amp;</code>.
-            Lines starting with <code>//</code> are comments.
+            One command per line. Comments start with <code>//</code>.<br><br>
+            Chain commands on one line with <code>&amp;</code>:
             <pre><span class="kw">print</span> Hello world
-<span class="kw">var</span> x <span class="val">10</span> <span class="cmt">// set x to 10</span>
-<span class="kw">print</span> $x <span class="kw">&amp;</span> <span class="kw">var</span> x <span class="val">20</span></pre>
+<span class="kw">var</span> x <span class="val">10</span>          <span class="cmt">// set x</span>
+<span class="kw">print</span> $x <span class="kw">&amp;</span> <span class="kw">var</span> x <span class="val">20</span> <span class="cmt">// chain</span></pre>
+            Inside <code>fn</code>/<code>define</code> bodies use <code>&amp;&amp;</code> to chain instead — <code>&amp;</code> is reserved for control flow bodies there.
+          </div>
+        </details>
+
+        <details class="wiki-section" style="border-left: 2px solid var(--accent);">
+          <summary style="color: var(--warning);">&amp;&amp; vs &amp; — Know the Difference</summary>
+          <div class="wiki-body">
+            There are two chain operators and they are <b>not interchangeable</b>:
+            <br><br>
+            <code>&amp;</code> — chains commands inside a <b>control flow body</b> (<code>while</code>, <code>if</code>, <code>for</code>, <code>repeat</code>):<br>
+            <pre><span class="kw">while</span> $i &lt; <span class="val">5</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i+1)</span>
+<span class="kw">if</span> $x &gt; <span class="val">0</span> <span class="kw">print</span> positive <span class="kw">&amp;</span> <span class="kw">var</span> found <span class="val">true</span></pre>
+            <code>&amp;&amp;</code> — chains commands inside a <b>function body</b> (<code>fn</code>, <code>define</code>):<br>
+            <pre><span class="kw">fn</span> greet <span class="kw">print</span> Hi <span class="kw">&amp;&amp;</span> <span class="kw">print</span> Bye
+<span class="kw">define</span> countdown n <span class="kw">var</span> i $n <span class="kw">&amp;&amp;</span> <span class="kw">while</span> $i &gt; <span class="val">0</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i-1)</span></pre>
+            <b>Why this matters:</b> if you use <code>&amp;</code> inside a <code>define</code> body that also contains a <code>while</code>, the interpreter can't tell where the while body ends — it cuts the loop short. The second example above shows the correct pattern: <code>&amp;&amp;</code> between function-level statements, <code>&amp;</code> for the while body.
+            <br><br>
+            <span style="color: var(--accent);">Rule of thumb:</span> writing a <code>fn</code> or <code>define</code>? use <code>&amp;&amp;</code>. Writing a loop or conditional body? use <code>&amp;</code>.
           </div>
         </details>
 
         <details class="wiki-section">
           <summary>Value Prefixes</summary>
           <div class="wiki-body">
-            <pre><span class="val">$name</span>         variable
-<span class="val">^arr|0</span>        array element
-<span class="val">(5+$x)</span>        math
-<span class="val">{randint|1|6}</span> inline func
-<span class="val">*literal</span>      no evaluation
-<span class="val">_</span>             space character</pre>
+            Every value is a space-separated token. Its first character tells the interpreter how to evaluate it:
+            <pre><span class="val">$name</span>          read variable
+<span class="val">^arr|0</span>         array element (1-indexed)
+<span class="val">^arr|</span>          entire array
+<span class="val">(5+$x)</span>         math expression
+<span class="val">{randint|1|6}</span>  inline returnable
+<span class="val">*$notavar</span>      literal — skip evaluation
+<span class="val">_</span>              a single space</pre>
+            <span class="cmt">Anything with no prefix is returned as-is.</span>
           </div>
         </details>
 
         <details class="wiki-section">
           <summary>Variables</summary>
           <div class="wiki-body">
-            <pre><span class="kw">var</span> name value
-<span class="kw">var</span> x <span class="val">10</span>
+            <pre><span class="kw">var</span> name value</pre>
+            Creates or overwrites. Value can be anything:
+            <pre><span class="kw">var</span> x <span class="val">10</span>
 <span class="kw">var</span> msg Hello there
 <span class="kw">var</span> result <span class="val">($x+5)</span>
-<span class="kw">var</span> roll <span class="val">{randint|1|6}</span></pre>
+<span class="kw">var</span> roll <span class="val">{randint|1|6}</span>
+<span class="kw">var</span> copy <span class="val">$x</span></pre>
+            Variable names can themselves be variables — <code>$$which</code> evaluates <code>$which</code> first then uses that as the variable name:
+            <pre><span class="kw">var</span> which score
+<span class="kw">var</span> score <span class="val">99</span>
+<span class="kw">print</span> $$which    <span class="cmt">// prints 99</span></pre>
+            Delete a variable:
+            <pre><span class="kw">trash</span> var x</pre>
           </div>
         </details>
 
         <details class="wiki-section">
           <summary>Arrays</summary>
           <div class="wiki-body">
+            <pre><span class="kw">array</span> name item1 item2 item3</pre>
+            Items are <b>1-indexed</b> (index 0 is the name internally).
             <pre><span class="kw">array</span> fruits apple banana cherry
-<span class="kw">print</span> <span class="val">^fruits|1</span>        <span class="cmt">> apple</span>
-<span class="kw">append</span> fruits mango
-<span class="kw">insert</span> fruits 1 kiwi
-<span class="kw">for</span> item <span class="kw">in</span> fruits <span class="kw">print</span> $item
-<span class="kw">trash</span> array fruits</pre>
+<span class="kw">print</span> <span class="val">^fruits|1</span>     <span class="cmt">// apple</span>
+<span class="kw">print</span> <span class="val">^fruits|</span>      <span class="cmt">// whole array</span></pre>
+            Modifying:
+            <pre><span class="kw">append</span> fruits mango      <span class="cmt">// add to end</span>
+<span class="kw">insert</span> fruits 2 kiwi     <span class="cmt">// replace index 2</span>
+<span class="kw">trash</span> item fruits|2      <span class="cmt">// delete index 2</span>
+<span class="kw">trash</span> array fruits       <span class="cmt">// delete array</span></pre>
+            Dynamic index:
+            <pre><span class="kw">var</span> i <span class="val">1</span>
+<span class="kw">print</span> <span class="val">^fruits|$i</span>    <span class="cmt">// index from var</span></pre>
+            Iterate:
+            <pre><span class="kw">for</span> item <span class="kw">in</span> fruits <span class="kw">print</span> $item</pre>
           </div>
         </details>
 
         <details class="wiki-section">
-          <summary>Functions</summary>
+          <summary>fn / run — Simple Functions</summary>
           <div class="wiki-body">
-            Simple (no params):
-            <pre><span class="kw">fn</span> greet <span class="kw">print</span> Hello!
+            No parameters. Use <code>&amp;&amp;</code> to chain commands in the body:
+            <pre><span class="kw">fn</span> greet <span class="kw">print</span> Hello <span class="kw">&amp;&amp;</span> <span class="kw">print</span> World
 <span class="kw">run</span> greet</pre>
-            With params:
+            Works with loops — <code>&amp;</code> inside a while body is safe here:
+            <pre><span class="kw">fn</span> count var i 0 <span class="kw">&amp;&amp;</span> <span class="kw">while</span> $i &lt; <span class="val">3</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i+1)</span>
+<span class="kw">run</span> count</pre>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>define / call — Functions with Args</summary>
+          <div class="wiki-body">
+            <pre><span class="kw">define</span> name param1|param2 body
+<span class="kw">call</span> name arg1 arg2</pre>
+            Single param:
+            <pre><span class="kw">define</span> double n <span class="kw">print</span> <span class="val">($n*2)</span>
+<span class="kw">call</span> double <span class="val">7</span></pre>
+            Multiple params separated by <code>|</code>:
             <pre><span class="kw">define</span> add a|b <span class="kw">print</span> <span class="val">($a+$b)</span>
 <span class="kw">call</span> add <span class="val">5</span> <span class="val">3</span></pre>
-            No params with <code>define</code>: use <code>|</code> alone.
+            No params — use <code>|</code> alone:
+            <pre><span class="kw">define</span> shout | <span class="kw">print</span> HELLO
+<span class="kw">call</span> shout</pre>
+            Chain commands with <code>&amp;&amp;</code>. Use <code>&amp;</code> inside loop bodies:
+            <pre><span class="kw">define</span> countdown n var i $n <span class="kw">&amp;&amp;</span> <span class="kw">while</span> $i &gt; <span class="val">0</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i-1)</span>
+<span class="kw">call</span> countdown <span class="val">5</span></pre>
           </div>
         </details>
 
         <details class="wiki-section">
-          <summary>Control Flow</summary>
+          <summary>if</summary>
           <div class="wiki-body">
+            <pre><span class="kw">if</span> val1 op val2 command</pre>
+            Runs command if condition is true. Chain with <code>&amp;</code>:
             <pre><span class="kw">if</span> $x &gt; <span class="val">10</span> <span class="kw">print</span> big
-<span class="kw">while</span> $i &lt; <span class="val">5</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i+1)</span>
-<span class="kw">repeat</span> <span class="val">3</span> <span class="kw">print</span> hi
-<span class="kw">for</span> x <span class="kw">in</span> arr <span class="kw">print</span> $x</pre>
-            Operators: <code>&lt;</code> <code>&gt;</code> <code>==</code> <code>!=</code> <code>&lt;=</code> <code>&gt;=</code>
+<span class="kw">if</span> $name == oyon <span class="kw">print</span> hi oyon <span class="kw">&amp;</span> <span class="kw">var</span> found <span class="val">true</span></pre>
+            No else — simulate with opposite conditions:
+            <pre><span class="kw">if</span> $x &gt; <span class="val">5</span> <span class="kw">print</span> big
+<span class="kw">if</span> $x &lt;= <span class="val">5</span> <span class="kw">print</span> small</pre>
+            Operators: <code>==</code> <code>!=</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>while</summary>
+          <div class="wiki-body">
+            <pre><span class="kw">while</span> val1 op val2 command</pre>
+            Loops while condition is true. Chain body commands with <code>&amp;</code>:
+            <pre><span class="kw">var</span> i <span class="val">0</span>
+<span class="kw">while</span> $i &lt; <span class="val">5</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i+1)</span></pre>
+            Hard limit of 10000 iterations — after that it stops with an error.
+            <br><br>Condition re-evaluates every iteration so variable updates take effect.
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>for / repeat</summary>
+          <div class="wiki-body">
+            <code>for</code> — iterate over every item in an array:
+            <pre><span class="kw">array</span> names Alice Bob Charlie
+<span class="kw">for</span> name <span class="kw">in</span> names <span class="kw">print</span> Hello $name</pre>
+            Chain body commands with <code>&amp;</code>:
+            <pre><span class="kw">for</span> x <span class="kw">in</span> nums <span class="kw">print</span> $x <span class="kw">&amp;</span> <span class="kw">var</span> total <span class="val">($total+$x)</span></pre>
+            <code>repeat</code> — run a command N times:
+            <pre><span class="kw">repeat</span> <span class="val">5</span> <span class="kw">print</span> hi
+<span class="kw">repeat</span> $n <span class="kw">print</span> again     <span class="cmt">// n from var</span></pre>
           </div>
         </details>
 
         <details class="wiki-section">
           <summary>Math</summary>
           <div class="wiki-body">
-            Wrap in <code>()</code>. Evaluated left-to-right, no precedence.
-            <pre><span class="val">(10+5)</span>       <span class="cmt">> 15</span>
-<span class="val">($x*$y)</span>      <span class="cmt">> x times y</span>
-<span class="val">(2+3*4)</span>      <span class="cmt">> 20, not 14</span></pre>
+            Wrap in <code>()</code>. Operators: <code>+</code> <code>-</code> <code>*</code> <code>/</code><br>
+            Evaluated strictly <b>left-to-right</b> — no precedence:
+            <pre><span class="val">(10+5)</span>        <span class="cmt">// 15</span>
+<span class="val">($x*$y)</span>       <span class="cmt">// x times y</span>
+<span class="val">(2+3*4)</span>       <span class="cmt">// 20, not 14</span>
+<span class="val">($a+$b-1)</span>     <span class="cmt">// chained</span></pre>
+            Use in var, if, while, print — anywhere a value is accepted:
+            <pre><span class="kw">var</span> area <span class="val">($w*$h)</span>
+<span class="kw">if</span> <span class="val">($x*2)</span> &gt; <span class="val">10</span> <span class="kw">print</span> large</pre>
           </div>
         </details>
 
         <details class="wiki-section">
-          <summary>Input</summary>
+          <summary>Inline Returnables { }</summary>
           <div class="wiki-body">
-            Prompts the user and stores their response in a variable.
+            Call a function inline and use its return value. Syntax: <code>{func|arg1|arg2}</code>
+            <pre><span class="val">{randint|1|6}</span>      <span class="cmt">// random 1-6</span>
+<span class="val">{concat|$a|_|$b}</span>   <span class="cmt">// join strings</span></pre>
+            Use anywhere a value is accepted:
+            <pre><span class="kw">var</span> dice <span class="val">{randint|1|6}</span>
+<span class="kw">if</span> <span class="val">{randint|0|1}</span> == <span class="val">1</span> <span class="kw">print</span> heads</pre>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>Input / Output</summary>
+          <div class="wiki-body">
+            <code>print</code> — output values, space-separated:
+            <pre><span class="kw">print</span> Hello $name
+<span class="kw">print</span> Result is <span class="val">($x+$y)</span></pre>
+            <code>input</code> — browser prompt, stores result in variable:
             <pre><span class="kw">input</span> name What is your name?
 <span class="kw">print</span> Hello $name</pre>
-            First arg is the variable name, everything after is the prompt text.
-            Note: don't attach punctuation directly to <code>$name</code> — use a space before it.
+            First arg is the variable. Everything after is the prompt text.<br><br>
+            <span class="cmt">⚠ Don't attach punctuation to $variables in print — $name! looks up "name!" not "name".</span>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>String Ops</summary>
+          <div class="wiki-body">
+            <code>concat</code> — join strings into a variable:
+            <pre><span class="kw">concat</span> full $first _ $last
+<span class="kw">print</span> $full</pre>
+            Use <code>_</code> for a space between parts. Or use the inline returnable:
+            <pre><span class="kw">var</span> full <span class="val">{concat|$first|_|$last}</span></pre>
           </div>
         </details>
 
         <details class="wiki-section">
           <summary>Utilities</summary>
           <div class="wiki-body">
-            <pre><span class="kw">randint</span> x <span class="val">1</span> <span class="val">100</span>   <span class="cmt">store random</span>
-<span class="kw">sleep</span> <span class="val">1</span>            <span class="cmt">pause 1 second</span>
-<span class="kw">concat</span> s $a _ $b   <span class="cmt">join strings</span>
-<span class="kw">clear</span>              <span class="cmt">clear terminal</span>
-<span class="kw">terminate</span>          <span class="cmt">stop program</span></pre>
+            <pre><span class="kw">randint</span> x <span class="val">1</span> <span class="val">100</span>    <span class="cmt">// random int → var</span>
+<span class="kw">sleep</span> <span class="val">2</span>             <span class="cmt">// pause 2 seconds</span>
+<span class="kw">clear</span>               <span class="cmt">// clear terminal</span>
+<span class="kw">terminate</span>           <span class="cmt">// stop program</span></pre>
+          </div>
+        </details>
+
+        <details class="wiki-section">
+          <summary>Token Gotchas</summary>
+          <div class="wiki-body">
+            These characters have special meaning — using them wrong in <code>print</code> will break output or crash:
+            <pre><span class="val">$name!</span>   <span class="cmt">// looks up "name!" not "name"</span>
+<span class="val">(hello)</span>  <span class="cmt">// tries to do math, crashes</span>
+<span class="val">{word}</span>   <span class="cmt">// tries to call a function</span>
+<span class="val">^thing</span>   <span class="cmt">// tries array access</span>
+<span class="val">*hello</span>   <span class="cmt">// prints "hello", * disappears</span>
+<span class="val">_</span>        <span class="cmt">// becomes a space</span></pre>
+            Fix: put a space before any punctuation after a variable, or use <code>*</code> to force literal.
           </div>
         </details>
 
@@ -654,7 +784,7 @@ print Fibonacci:
 while $count < 10 print $a & var temp $b & var b ($a+$b) & var a $temp & var count ($count+1)`,
 
   timestable: `// Times Table
-define timestable n|x var i 1 & while $i <= 10 print $n x $i = ($n*$i) & var i ($i+1)
+define timestable n|x var i 1 && while $i <= 10 print $n x $i = ($n*$i) & var i ($i+1)
 call timestable 7 x`,
 
   arrays: `// Array Demo
@@ -673,11 +803,12 @@ var next ($age+1)
 print Next year you will be $next years old`,
 
   functions: `// Functions
-define greet name | print Hello, $name!
-define square n | var r ($n*$n) & print $n squared is $r
+// simple: no args, use fn + run
+fn intro print Hello from wierd lang && print made by 14yr old oyon
+run intro
 
-call greet World
-call greet wierd lang
+// with args: use define + call (use && to chain commands)
+define square n var r ($n*$n) && print $n squared is $r
 call square 7
 call square 12`,
 };

@@ -56,7 +56,7 @@ def arg_func_run(name,*args):
           make_variable(seel,args[num])
           num += 1
       for state in code:
-        if state == '&':
+        if state == '&&':
           temp = ''
           for thingy in current:
             temp += thingy + ' '
@@ -194,8 +194,13 @@ def while_state(*endme):
     var2 = int(var2)
   except:
     pass
+  _iterations = 0
   while cond(eval_key(str(var1)),eval_key(str(var2)),condition):
+    if _iterations >= 10000:
+      output_method('[ERROR] infinite loop stopped after 10000 iterations')
+      break
     run_body(torun)
+    _iterations += 1
 def if_state(*shit):
   #if seal < panda run seal
   var1 = shit[0]
@@ -257,8 +262,8 @@ def run_f(name):
   global fns
   for fn in fns:
     if fn.split(':')[0] == name:
-      if '&' in fn.split(':',1)[1]:
-        content = fn.split(':',1)[1].split('&')
+      if '&&' in fn.split(':',1)[1]:
+        content = fn.split(':',1)[1].split('&&')
         for cmd in content:
           rd_line(cmd.lstrip().rstrip())
       else:
