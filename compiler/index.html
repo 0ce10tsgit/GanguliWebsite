@@ -500,7 +500,7 @@
           <summary>Arrays</summary>
           <div class="wiki-body">
             <pre><span class="kw">array</span> fruits apple banana cherry
-<span class="kw">print</span> <span class="val">^fruits|1</span>        <span class="cmt">→ apple</span>
+<span class="kw">print</span> <span class="val">^fruits|1</span>        <span class="cmt">> apple</span>
 <span class="kw">append</span> fruits mango
 <span class="kw">insert</span> fruits 1 kiwi
 <span class="kw">for</span> item <span class="kw">in</span> fruits <span class="kw">print</span> $item
@@ -536,9 +536,9 @@
           <summary>Math</summary>
           <div class="wiki-body">
             Wrap in <code>()</code>. Evaluated left-to-right, no precedence.
-            <pre><span class="val">(10+5)</span>       <span class="cmt">→ 15</span>
-<span class="val">($x*$y)</span>      <span class="cmt">→ x times y</span>
-<span class="val">(2+3*4)</span>      <span class="cmt">→ 20, not 14</span></pre>
+            <pre><span class="val">(10+5)</span>       <span class="cmt">> 15</span>
+<span class="val">($x*$y)</span>      <span class="cmt">> x times y</span>
+<span class="val">(2+3*4)</span>      <span class="cmt">> 20, not 14</span></pre>
           </div>
         </details>
 
@@ -602,7 +602,7 @@
         <button class="ttab active">TERMINAL</button>
       </div>
       <div id="terminal-output">
-        <span class="t-prompt">→</span> <span class="t-info">wierd lang loaded successfully</span><br>
+        <span class="t-prompt">></span> <span class="t-info">wierd lang loaded successfully</span><br>
         <span class="t-cursor"></span>
       </div>
     </div>
@@ -766,7 +766,7 @@ async function initPyodide() {
     const src = await res.text();
     await pyodide.runPythonAsync(src);
     setStatus('ready', 'READY');
-    termLine(`<span class="t-prompt">→</span> <span class="t-info">pyodide loaded good to go!</span>`);
+    termLine(`<span class="t-prompt">></span> <span class="t-info">pyodide loaded good to go!</span>`);
     runBtns.forEach(b => b.disabled = false);
   } catch (e) {
     setStatus('error', 'ERROR');
@@ -794,7 +794,7 @@ async function runCode() {
   const code = view.state.doc.toString();
   const t0 = performance.now();
 
-  termLine(`<span class="t-prompt">→</span> <span class="t-info">wierd lang run · ${new Date().toLocaleTimeString()}</span>`);
+  termLine(`<span class="t-prompt">></span> <span class="t-info">wierd lang run · ${new Date().toLocaleTimeString()}</span>`);
 
   try {
     pyodide.globals.set('_user_code', code);
