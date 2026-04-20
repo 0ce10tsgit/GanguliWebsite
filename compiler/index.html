@@ -400,6 +400,16 @@
     }
     #about-body p:last-child { margin-bottom: 0; }
 
+    /* ── SIDEBAR RESIZE ── */
+    #sidebar-resize {
+      position: absolute;
+      top: 0; right: 0; bottom: 0;
+      width: 4px;
+      cursor: col-resize;
+      z-index: 60;
+    }
+    #sidebar-resize:hover, #sidebar-resize.dragging { background: var(--accent); opacity: 0.5; }
+
     /* ── MOBILE ── */
     @media (max-width: 768px) {
       #sidebar {
@@ -423,7 +433,8 @@
 
 <div id="app">
   <!-- SIDEBAR -->
-  <aside id="sidebar">
+  <aside id="sidebar" style="position:relative;">
+    <div id="sidebar-resize"></div>
     <div id="sidebar-header">
       <div style="display:flex;align-items:center;gap:10px;">
         <a href="../" id="back-btn" title="Back">←</a>
@@ -448,7 +459,7 @@
             <pre><span class="kw">print</span> Hello world
 <span class="kw">var</span> x <span class="val">10</span>          <span class="cmt">// set x</span>
 <span class="kw">print</span> $x <span class="kw">&amp;</span> <span class="kw">var</span> x <span class="val">20</span> <span class="cmt">// chain</span></pre>
-            Inside <code>fn</code>/<code>define</code> bodies use <code>&amp;&amp;</code> to chain instead — <code>&amp;</code> is reserved for control flow bodies there.
+            Inside <code>fn</code>/<code>define</code> bodies use <code>&amp;&amp;</code> to chain instead. <code>&amp;</code> is reserved for control flow bodies there.
           </div>
         </details>
 
@@ -461,7 +472,7 @@
 <span class="val">^arr|</span>          entire array
 <span class="val">(5+$x)</span>         math expression
 <span class="val">{randint|1|6}</span>  inline returnable
-<span class="val">*$notavar</span>      literal — skip evaluation
+<span class="val">*$notavar</span>      literal, skips evaluation
 <span class="val">_</span>              a single space</pre>
             <span class="cmt">Anything with no prefix is returned as-is.</span>
           </div>
@@ -477,7 +488,7 @@
 <span class="kw">var</span> result <span class="val">($x+5)</span>
 <span class="kw">var</span> roll <span class="val">{randint|1|6}</span>
 <span class="kw">var</span> copy <span class="val">$x</span></pre>
-            Variable names can themselves be variables — <code>$$which</code> evaluates <code>$which</code> first then uses that as the variable name:
+            Variable names can themselves be variables. <code>$$which</code> evaluates <code>$which</code> first then uses that as the variable name:
             <pre><span class="kw">var</span> which score
 <span class="kw">var</span> score <span class="val">99</span>
 <span class="kw">print</span> $$which    <span class="cmt">// prints 99</span></pre>
@@ -528,7 +539,7 @@
             <code>define</code> + <code>call</code>. Params separated by <code>|</code>:
             <pre><span class="kw">define</span> add a|b <span class="kw">print</span> <span class="val">($a+$b)</span>
 <span class="kw">call</span> add <span class="val">5</span> <span class="val">3</span></pre>
-            No params — use <code>|</code> alone:
+            For no params, use <code>|</code> alone:
             <pre><span class="kw">define</span> shout | <span class="kw">print</span> HELLO
 <span class="kw">call</span> shout</pre>
             <div style="border-left:2px solid var(--accent);padding:5px 10px;margin:8px 0;background:var(--accent-dim);line-height:1.8;">
@@ -547,7 +558,7 @@
             Runs command if condition is true. Chain with <code>&amp;</code>:
             <pre><span class="kw">if</span> $x &gt; <span class="val">10</span> <span class="kw">print</span> big
 <span class="kw">if</span> $name == oyon <span class="kw">print</span> hi oyon <span class="kw">&amp;</span> <span class="kw">var</span> found <span class="val">true</span></pre>
-            No else — simulate with opposite conditions:
+            There is no else. Simulate with opposite conditions:
             <pre><span class="kw">if</span> $x &gt; <span class="val">5</span> <span class="kw">print</span> big
 <span class="kw">if</span> $x &lt;= <span class="val">5</span> <span class="kw">print</span> small</pre>
             Operators: <code>==</code> <code>!=</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code>
@@ -561,7 +572,7 @@
             Loops while condition is true. Chain body commands with <code>&amp;</code>:
             <pre><span class="kw">var</span> i <span class="val">0</span>
 <span class="kw">while</span> $i &lt; <span class="val">5</span> <span class="kw">print</span> $i <span class="kw">&amp;</span> <span class="kw">var</span> i <span class="val">($i+1)</span></pre>
-            Hard limit of 10000 iterations — after that it stops with an error.
+            Hard limit of 10000 iterations; after that it stops with an error.
             <br><br>Condition re-evaluates every iteration so variable updates take effect.
           </div>
         </details>
@@ -569,12 +580,12 @@
         <details class="wiki-section">
           <summary>for / repeat</summary>
           <div class="wiki-body">
-            <code>for</code> — iterate over every item in an array:
+            <code>for</code> iterates over every item in an array:
             <pre><span class="kw">array</span> names Alice Bob Charlie
 <span class="kw">for</span> name <span class="kw">in</span> names <span class="kw">print</span> Hello $name</pre>
             Chain body commands with <code>&amp;</code>:
             <pre><span class="kw">for</span> x <span class="kw">in</span> nums <span class="kw">print</span> $x <span class="kw">&amp;</span> <span class="kw">var</span> total <span class="val">($total+$x)</span></pre>
-            <code>repeat</code> — run a command N times:
+            <code>repeat</code> runs a command N times:
             <pre><span class="kw">repeat</span> <span class="val">5</span> <span class="kw">print</span> hi
 <span class="kw">repeat</span> $n <span class="kw">print</span> again     <span class="cmt">// n from var</span></pre>
           </div>
@@ -584,12 +595,12 @@
           <summary>Math</summary>
           <div class="wiki-body">
             Wrap in <code>()</code>. Operators: <code>+</code> <code>-</code> <code>*</code> <code>/</code><br>
-            Evaluated strictly <b>left-to-right</b> — no precedence:
+            Evaluated strictly <b>left-to-right</b>, no precedence:
             <pre><span class="val">(10+5)</span>        <span class="cmt">// 15</span>
 <span class="val">($x*$y)</span>       <span class="cmt">// x times y</span>
 <span class="val">(2+3*4)</span>       <span class="cmt">// 20, not 14</span>
 <span class="val">($a+$b-1)</span>     <span class="cmt">// chained</span></pre>
-            Use in var, if, while, print — anywhere a value is accepted:
+            Use in var, if, while, print anywhere a value is accepted:
             <pre><span class="kw">var</span> area <span class="val">($w*$h)</span>
 <span class="kw">if</span> <span class="val">($x*2)</span> &gt; <span class="val">10</span> <span class="kw">print</span> large</pre>
           </div>
@@ -610,21 +621,21 @@
         <details class="wiki-section">
           <summary>Input / Output</summary>
           <div class="wiki-body">
-            <code>print</code> — output values, space-separated:
+            <code>print</code> outputs values, space-separated:
             <pre><span class="kw">print</span> Hello $name
 <span class="kw">print</span> Result is <span class="val">($x+$y)</span></pre>
-            <code>input</code> — browser prompt, stores result in variable:
+            <code>input</code> is a browser prompt that stores the result in a variable:
             <pre><span class="kw">input</span> name What is your name?
 <span class="kw">print</span> Hello $name</pre>
             First arg is the variable. Everything after is the prompt text.<br><br>
-            <span class="cmt">⚠ Don't attach punctuation to $variables in print — $name! looks up "name!" not "name".</span>
+            <span class="cmt">⚠ Don't attach punctuation to $variables in print. $name! looks up "name!" not "name".</span>
           </div>
         </details>
 
         <details class="wiki-section">
           <summary>String Ops</summary>
           <div class="wiki-body">
-            <code>concat</code> — join strings into a variable:
+            <code>concat</code> joins strings into a variable:
             <pre><span class="kw">concat</span> full $first _ $last
 <span class="kw">print</span> $full</pre>
             Use <code>_</code> for a space between parts. Or use the inline returnable:
@@ -645,7 +656,7 @@
         <details class="wiki-section">
           <summary>Token Gotchas</summary>
           <div class="wiki-body">
-            These characters have special meaning — using them wrong in <code>print</code> will break output or crash:
+            These characters have special meaning. Using them wrong in <code>print</code> will break output or crash:
             <pre><span class="val">$name!</span>   <span class="cmt">// looks up "name!" not "name"</span>
 <span class="val">(hello)</span>  <span class="cmt">// tries to do math, crashes</span>
 <span class="val">{word}</span>   <span class="cmt">// tries to call a function</span>
@@ -997,6 +1008,23 @@ const aboutModal = document.getElementById('about-modal');
 document.getElementById('run-sidebar').addEventListener('click', () => aboutModal.classList.add('show'));
 document.getElementById('about-close').addEventListener('click', () => aboutModal.classList.remove('show'));
 aboutModal.addEventListener('click', e => { if (e.target === aboutModal) aboutModal.classList.remove('show'); });
+
+// ── SIDEBAR RESIZE ───────────────────────────────────────────────────────
+const resizeHandle = document.getElementById('sidebar-resize');
+let resizing = false;
+resizeHandle.addEventListener('mousedown', e => {
+  resizing = true;
+  resizeHandle.classList.add('dragging');
+  e.preventDefault();
+});
+document.addEventListener('mousemove', e => {
+  if (!resizing) return;
+  const newW = Math.max(160, Math.min(520, e.clientX));
+  document.getElementById('sidebar').style.width = newW + 'px';
+});
+document.addEventListener('mouseup', () => {
+  if (resizing) { resizing = false; resizeHandle.classList.remove('dragging'); }
+});
 
 // ── BOOT ─────────────────────────────────────────────────────────────────
 aboutModal.classList.add('show');
