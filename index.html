@@ -121,7 +121,7 @@
     <img src="IMG_0976.jpeg" alt="Oyon Ganguli">
     <div class="info">
         <span class="name">Oyon <span id="debug-toggle" style="cursor:pointer;pointer-events:auto;">G</span>anguli</span>
-        <span class="title">RPI Information Technology<br>and Web Sciences '29</span>
+        <span class="title"><span id="road-debug-toggle" style="cursor:pointer;pointer-events:auto;">R</span>PI Information Technology<br>and Web Sciences '29</span>
     </div>
 </div>
 
@@ -440,6 +440,7 @@ let trailMesh = null;
 let trailPos = [], trailCol = [];
 let particles  = [];
 let spawnPoints = []; // N random road intersections spread across the mask
+let roadDebugMesh = null; // green points at every detected road pixel (toggled via R in RPI)
 
 // Precomputed luminance LUT — avoids Math.pow() per trail vertex per frame
 const LUM_LUT = new Float32Array(TRAIL_LEN);
@@ -590,6 +591,31 @@ function initParticleSystem() {
     scene.add(headMesh);
 }
 
+function buildRoadDebugMesh() {
+    if (roadDebugMesh) {
+        roadDebugMesh.geometry.dispose();
+        roadDebugMesh.material.dispose();
+        scene.remove(roadDebugMesh);
+        roadDebugMesh = null;
+    }
+    if (!knownRoadPixels.length) return;
+    const positions = new Float32Array(knownRoadPixels.length * 3);
+    for (let i = 0; i < knownRoadPixels.length; i++) {
+        const [px, py] = knownRoadPixels[i];
+        positions[i*3]     = (px - CANVAS_PX / 2) * SCENE_SCALE;
+        positions[i*3 + 1] = 0.02;
+        positions[i*3 + 2] = (py - CANVAS_PX / 2) * SCENE_SCALE;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    roadDebugMesh = new THREE.Points(geo, new THREE.PointsMaterial({
+        color: 0x00ff00, size: 0.08, sizeAttenuation: true, fog: false,
+    }));
+    roadDebugMesh.frustumCulled = false;
+    roadDebugMesh.visible = false;
+    scene.add(roadDebugMesh);
+}
+
 function updateParticles() {
     for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
@@ -690,6 +716,7 @@ async function run(lat, lng) {
             }
 
             buildSpawnPoints();
+            buildRoadDebugMesh();
             console.log(`[road-particles] ${spawnPoints.length} spawn points across mask`);
 
             initParticleSystem();
@@ -718,6 +745,9 @@ Object.assign(_diagDiv.style, {
 document.body.appendChild(_diagDiv);
 document.getElementById('debug-toggle').addEventListener('click', () => {
     _diagDiv.style.display = _diagDiv.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('road-debug-toggle').addEventListener('click', () => {
+    if (roadDebugMesh) roadDebugMesh.visible = !roadDebugMesh.visible;
 });
 
 let _diagDone = false;
