@@ -705,6 +705,56 @@ async function run(lat, lng) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DIAGNOSTICS OVERLAY
+// ─────────────────────────────────────────────────────────────────────────────
+const _diagDiv = document.createElement('div');
+Object.assign(_diagDiv.style, {
+    position: 'fixed', top: '8px', left: '8px', zIndex: 99999,
+    background: 'rgba(0,0,0,0.85)', color: '#0f0', font: '11px monospace',
+    padding: '8px', maxWidth: '90vw', wordBreak: 'break-all', pointerEvents: 'none',
+    whiteSpace: 'pre-wrap'
+});
+document.body.appendChild(_diagDiv);
+
+let _diagDone = false;
+function showDiagnostics() {
+    if (_diagDone) return;
+    _diagDone = true;
+    const gl = renderer.getContext();
+    const dbg = gl.getExtension('WEBGL_debug_renderer_info');
+    const gpuTimer = gl.getExtension('EXT_disjoint_timer_query_webgl2');
+
+    const lines = [
+        `DPR: ${devicePixelRatio} | renderer PR: ${renderer.getPixelRatio()}`,
+        `drawBuf: ${gl.drawingBufferWidth}x${gl.drawingBufferHeight}`,
+        `GL: ${gl.getParameter(gl.VERSION)}`,
+        `GPU: ${dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : 'n/a'}`,
+        `WebGL2: ${renderer.capabilities.isWebGL2}`,
+        `gpuTimer: ${!!gpuTimer}`,
+        `programs: ${renderer.info.programs?.length}`,
+        `textures: ${renderer.info.memory.textures}`,
+        `geometries: ${renderer.info.memory.geometries}`,
+    ];
+
+    let last = performance.now(), sum = 0, n = 0;
+    const deltas = [];
+    function probe(now) {
+        const d = now - last; last = now;
+        sum += d; n++; deltas.push(d);
+        if (n < 90) { requestAnimationFrame(probe); return; }
+        const avg = sum / n;
+        const sorted = [...deltas].sort((a, b) => a - b);
+        const p95 = sorted[Math.floor(sorted.length * 0.95)];
+        lines.push(`rAF avg: ${avg.toFixed(1)}ms (~${(1000/avg).toFixed(0)}fps)`);
+        lines.push(`rAF p95: ${p95.toFixed(1)}ms (~${(1000/p95).toFixed(0)}fps)`);
+        if (avg > 30) lines.push('⚠ suspected Low Power Mode');
+        _diagDiv.textContent = lines.join('\n');
+    }
+    requestAnimationFrame(probe);
+    _diagDiv.textContent = lines.join('\n') + '\n(probing rAF...)';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ANIMATION LOOP
 // ─────────────────────────────────────────────────────────────────────────────
 let time = 0, frame = 0;
@@ -726,12 +776,14 @@ let _lastFpsTime = performance.now(), _particleMs = 0, _renderMs = 0;
     t0 = performance.now();
     renderer.render(scene, camera);
     _renderMs = performance.now() - t0;
+    showDiagnostics();
 
     if (frame % 60 === 0) {
         const now = performance.now();
         const fps = (60 / ((now - _lastFpsTime) / 1000)).toFixed(1);
         _lastFpsTime = now;
         console.log(`FPS: ${fps} | particles: ${_particleMs.toFixed(2)}ms | render: ${_renderMs.toFixed(2)}ms`);
+        _diagDiv.textContent += `\nFPS: ${fps} | particles: ${_particleMs.toFixed(2)}ms | render: ${_renderMs.toFixed(2)}ms`;
     }
 })();
 
