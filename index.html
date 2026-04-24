@@ -158,6 +158,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONFIG
@@ -211,10 +212,11 @@ const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 20
 // pitch=69°, dist=62
 camera.position.set(62*Math.cos(69*Math.PI/180), 62*Math.sin(69*Math.PI/180), 62*Math.cos(69*Math.PI/180));
 
-const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: isIOS ? 'default' : 'high-performance' });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(0.9);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
 container.appendChild(renderer.domElement);
+renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); });
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = 0.05;
@@ -563,19 +565,25 @@ function initParticleSystem() {
     }
 
     const trailGeo = new THREE.BufferGeometry();
-    trailGeo.setAttribute('position', new THREE.BufferAttribute(allPos, 3));
-    trailGeo.setAttribute('color',    new THREE.BufferAttribute(allCol, 3));
+    const trailPosAttr = new THREE.BufferAttribute(allPos, 3);
+    const trailColAttr = new THREE.BufferAttribute(allCol, 3);
+    trailPosAttr.setUsage(THREE.DynamicDrawUsage);
+    trailColAttr.setUsage(THREE.DynamicDrawUsage);
+    trailGeo.setAttribute('position', trailPosAttr);
+    trailGeo.setAttribute('color',    trailColAttr);
     // Draw as points so we don't need per-particle line segments
     trailMesh = new THREE.Points(trailGeo, new THREE.PointsMaterial({
-        vertexColors: true, size: 0.12, sizeAttenuation: true,
+        vertexColors: true, size: 0.12, sizeAttenuation: true, fog: false,
     }));
     trailMesh.frustumCulled = false;
     trailGroup.add(trailMesh);
 
     const hGeo = new THREE.BufferGeometry();
-    hGeo.setAttribute('position', new THREE.BufferAttribute(headPos, 3));
+    const headPosAttr = new THREE.BufferAttribute(headPos, 3);
+    headPosAttr.setUsage(THREE.DynamicDrawUsage);
+    hGeo.setAttribute('position', headPosAttr);
     headMesh = new THREE.Points(hGeo, new THREE.PointsMaterial({
-        color: ACCENT, size: 0.5, sizeAttenuation: true,
+        color: ACCENT, size: 0.5, sizeAttenuation: true, fog: false,
     }));
     headMesh.frustumCulled = false;
     scene.add(headMesh);
@@ -620,7 +628,11 @@ function applyMapTexture(outerCanvas, innerCanvas) {
     if (activeTex) activeTex.dispose();
     if (activeInnerTex) activeInnerTex.dispose();
     activeTex = new THREE.CanvasTexture(outerCanvas);
+    activeTex.generateMipmaps = false;
+    activeTex.minFilter = THREE.LinearFilter;
     activeInnerTex = new THREE.CanvasTexture(innerCanvas);
+    activeInnerTex.generateMipmaps = false;
+    activeInnerTex.minFilter = THREE.LinearFilter;
     mapMat.map = activeTex; mapMat.color.set(0xffffff); mapMat.needsUpdate = true;
     innerMapMat.map = activeInnerTex; innerMapMat.color.set(0xffffff); innerMapMat.needsUpdate = true;
 }
