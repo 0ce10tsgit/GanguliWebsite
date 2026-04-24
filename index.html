@@ -174,8 +174,8 @@ const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units 
 const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;             // ≈ 93 units (map plane)
 const ACCENT         = 0xe64f4f;
 
-const PARTICLE_COUNT  = isMobile ? 30 : 80;
-const SPAWN_POINT_COUNT = 16; // number of random spawn points distributed across the mask
+const PARTICLE_COUNT  = isMobile ? 55 : 80;
+const SPAWN_POINT_COUNT = isMobile ? 28 : 16; // number of random spawn points distributed across the mask
 const TRAIL_LEN       = isMobile ? 6 : 10;
 const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
 const STEP_INTERVAL   = isMobile ? 4 : 7;   // mobile: faster particle updates
@@ -209,8 +209,9 @@ scene.background = new THREE.Color(20/255, 5/255, 7/255);
 scene.fog = new THREE.FogExp2(new THREE.Color(20/255, 5/255, 7/255), 0.006);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
-// pitch=69°, dist=62
-camera.position.set(62*Math.cos(69*Math.PI/180), 62*Math.sin(69*Math.PI/180), 62*Math.cos(69*Math.PI/180));
+// pitch=69°, dist=62 (steeper top-down tilt on mobile for portrait framing)
+const CAM_PITCH = isMobile ? 78 : 69;
+camera.position.set(62*Math.cos(CAM_PITCH*Math.PI/180), 62*Math.sin(CAM_PITCH*Math.PI/180), 62*Math.cos(CAM_PITCH*Math.PI/180));
 
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: isIOS ? 'default' : 'high-performance' });
 renderer.setSize(innerWidth, innerHeight);
