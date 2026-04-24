@@ -1097,8 +1097,13 @@ async function loadMenu(hall, meal, targetId) {
 
   try {
     const res = await fetch(url);
-    if (!res.ok) throw new Error('proxy error');
-    const data = await res.json();
+    const raw = await res.text();
+    console.log(`[menu-proxy ${hall}] status ${res.status}`);
+    console.log(`[menu-proxy ${hall}] body:`, raw);
+    if (!res.ok) throw new Error(`proxy HTTP ${res.status}`);
+    let data;
+    try { data = JSON.parse(raw); }
+    catch (e) { throw new Error(`non-JSON response: ${raw.slice(0, 200)}`); }
     if (data.error) throw new Error(data.error);
     renderMenu(data, meal, container);
   } catch (err) {
@@ -1113,50 +1118,32 @@ async function loadMenu(hall, meal, targetId) {
 }
 
 function renderMenu(data, meal, container) {
-  // Parse Sodexo's JSON structure — they nest under meal periods
+  // Cache shape: { periods: [{ name, items: [{ name, tags: [] }] }], scrapedAt, source }
+  const wanted = MEAL_NAMES[meal].map(n => n.toLowerCase());
   let items = [];
 
-  // Try various known structures
-  if (Array.isArray(data)) {
-    data.forEach(day => {
-      if (day.menu && Array.isArray(day.menu)) {
-        day.menu.forEach(period => {
-          if (MEAL_NAMES[meal].some(n => period.periodName && period.periodName.toLowerCase().includes(n.toLowerCase()))) {
-            if (period.courses) {
-              period.courses.forEach(course => {
-                if (course.menuItems) items.push(...course.menuItems);
-              });
-            }
-          }
-        });
-      }
-    });
-  } else if (data.menus) {
-    data.menus.forEach(period => {
-      if (MEAL_NAMES[meal].some(n => period.periodName && period.periodName.toLowerCase().includes(n.toLowerCase()))) {
-        if (period.courses) {
-          period.courses.forEach(course => {
-            if (course.menuItems) items.push(...course.menuItems);
-          });
-        }
-      }
-    });
+  if (data.periods && data.periods.length) {
+    const match = data.periods.find(p => wanted.some(w => p.name && p.name.toLowerCase().includes(w)));
+    if (match) items = match.items;
+    else if (data.periods.length === 1 && data.periods[0].name === 'All') items = data.periods[0].items;
   }
 
-  if (items.length === 0) {
+  if (!items.length) {
     container.innerHTML = `<div style="font-size:9px;color:var(--text-dim);grid-column:1/-1">No menu items found for this period. <br>Check the Sodexo website for today's offerings.</div>`;
     return;
   }
 
   container.innerHTML = items.map(item => {
-    const name = item.formalName || item.name || item.itemName || 'Unknown Item';
-    const tags = [];
-    if (item.isVegetarian || item.vegetarian) tags.push('<span class="tag veg">VEG</span>');
-    if (item.isVegan || item.vegan) tags.push('<span class="tag vegan">VEGAN</span>');
-    if (item.isHalal || item.halal) tags.push('<span class="tag halal">HALAL</span>');
+    const tags = (item.tags || []).map(t => {
+      const k = t.toLowerCase();
+      if (k.includes('vegan'))      return '<span class="tag vegan">VEGAN</span>';
+      if (k.includes('vegetarian')) return '<span class="tag veg">VEG</span>';
+      if (k.includes('halal'))      return '<span class="tag halal">HALAL</span>';
+      return '';
+    }).filter(Boolean);
     return `
       <div class="menu-item">
-        <div class="menu-item-name">${name}</div>
+        <div class="menu-item-name">${item.name}</div>
         ${tags.length ? `<div class="menu-item-tags">${tags.join('')}</div>` : ''}
       </div>
     `;

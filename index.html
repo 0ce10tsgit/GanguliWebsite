@@ -742,7 +742,6 @@ document.addEventListener('click', (e) => {
 fetch('/location.php')
     .then(r => r.json())
     .then(d => {
-        document.getElementById('city').textContent = `near and around ${d.city} `;
         run(d.lat, d.lon);
     })
     .catch(() => {
