@@ -174,11 +174,11 @@ const GROUND_SIZE      = CANVAS_PX * SCENE_SCALE;               // ≈ 40 units 
 const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;             // ≈ 93 units (map plane)
 const ACCENT         = 0xe64f4f;
 
-const PARTICLE_COUNT  = isMobile ? 55 : 80;
-const SPAWN_POINT_COUNT = isMobile ? 28 : 16; // number of random spawn points distributed across the mask
-const TRAIL_LEN       = isMobile ? 6 : 10;
+const PARTICLE_COUNT  = 55;
+const SPAWN_POINT_COUNT = isMobile ? 28 : 60; // number of random spawn points distributed across the mask
+const TRAIL_LEN       = 6;
 const STEPS_PER_FRAME = 2;    // canvas pixels advanced per step
-const STEP_INTERVAL   = isMobile ? 4 : 7;   // mobile: faster particle updates
+const STEP_INTERVAL   = 3;
 const SPAWN_RADIUS    = 120;  // canvas px from center to sample spawn pool from
 const LIFETIME_MIN    = 300;  // frames before forced respawn (~5s)
 const LIFETIME_MAX    = 1000;  // frames before forced respawn (~10s)
@@ -210,18 +210,18 @@ scene.fog = new THREE.FogExp2(new THREE.Color(20/255, 5/255, 7/255), 0.006);
 
 const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 2000);
 // pitch=69°, dist=62 (steeper top-down tilt on mobile for portrait framing)
-const CAM_PITCH = isMobile ? 78 : 69;
+const CAM_PITCH = 78;
 camera.position.set(62*Math.cos(CAM_PITCH*Math.PI/180), 62*Math.sin(CAM_PITCH*Math.PI/180), 62*Math.cos(CAM_PITCH*Math.PI/180));
 
-const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: isIOS ? 'default' : 'high-performance' });
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: isIOS ? 'default' : 'high-performance' });
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setPixelRatio(1);
 container.appendChild(renderer.domElement);
 renderer.domElement.addEventListener('webglcontextlost', (e) => { e.preventDefault(); });
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.dampingFactor = 0.05;
-controls.autoRotate = true; controls.autoRotateSpeed = isMobile ? 0.525 : 0.35;
+controls.autoRotate = true; controls.autoRotateSpeed = 0.3;
 controls.enableZoom = false; controls.enablePan = false;
 controls.enableRotate = false;
 controls.maxPolarAngle = Math.PI / 2.05; controls.minPolarAngle = 0.1;
@@ -267,12 +267,13 @@ async function fetchTiles(lat, lng, zoom) {
 
     const results = await Promise.all(tiles);
 
-    // Outer texture: all tiles downsampled to 1024×1024
+    // Outer texture: all tiles downsampled. Desktop gets 2× resolution since its grid is much larger.
+    const outerSize = isMobile ? 1024 : 2048;
     const outerCanvas = document.createElement('canvas');
-    outerCanvas.width = outerCanvas.height = 1024;
+    outerCanvas.width = outerCanvas.height = outerSize;
     const oCtx = outerCanvas.getContext('2d');
     oCtx.imageSmoothingEnabled = true;
-    const loTile = 1024 / VISUAL_TILE_GRID;
+    const loTile = outerSize / VISUAL_TILE_GRID;
     for (const { img, tx, ty } of results) {
         const gx = tx - center.x + vhalf, gy = ty - center.y + vhalf;
         oCtx.drawImage(img, gx * loTile, gy * loTile, loTile, loTile);
@@ -562,20 +563,38 @@ function initParticleSystem() {
         p.trailHead = 0;
         p.trailFill = 0;
         particles.push(p);
-        trailPos.push(allPos.subarray(i * TRAIL_LEN * 3, (i+1) * TRAIL_LEN * 3));
-        trailCol.push(allCol.subarray(i * TRAIL_LEN * 3, (i+1) * TRAIL_LEN * 3));
+        const posSub = allPos.subarray(i * TRAIL_LEN * 3, (i+1) * TRAIL_LEN * 3);
+        const colSub = allCol.subarray(i * TRAIL_LEN * 3, (i+1) * TRAIL_LEN * 3);
+        // Trail colors are a static gradient — fill once, never touched again
+        for (let j = 0; j < TRAIL_LEN; j++) {
+            const lum = LUM_LUT[j];
+            colSub[j*3]     = 0.9*lum;
+            colSub[j*3 + 1] = 0.07*lum*lum;
+            colSub[j*3 + 2] = 0.07*lum*lum;
+        }
+        trailPos.push(posSub);
+        trailCol.push(colSub);
     }
 
     const trailGeo = new THREE.BufferGeometry();
     const trailPosAttr = new THREE.BufferAttribute(allPos, 3);
     const trailColAttr = new THREE.BufferAttribute(allCol, 3);
     trailPosAttr.setUsage(THREE.DynamicDrawUsage);
-    trailColAttr.setUsage(THREE.DynamicDrawUsage);
     trailGeo.setAttribute('position', trailPosAttr);
     trailGeo.setAttribute('color',    trailColAttr);
-    // Draw as points so we don't need per-particle line segments
-    trailMesh = new THREE.Points(trailGeo, new THREE.PointsMaterial({
-        vertexColors: true, size: 0.12, sizeAttenuation: true, fog: false,
+    // Index buffer: connect each particle's TRAIL_LEN vertices into TRAIL_LEN-1 line segments
+    const segPerParticle = TRAIL_LEN - 1;
+    const indices = new Uint16Array(PARTICLE_COUNT * segPerParticle * 2);
+    for (let i = 0, k = 0; i < PARTICLE_COUNT; i++) {
+        const base = i * TRAIL_LEN;
+        for (let s = 0; s < segPerParticle; s++) {
+            indices[k++] = base + s;
+            indices[k++] = base + s + 1;
+        }
+    }
+    trailGeo.setIndex(new THREE.BufferAttribute(indices, 1));
+    trailMesh = new THREE.LineSegments(trailGeo, new THREE.LineBasicMaterial({
+        vertexColors: true, fog: false,
     }));
     trailMesh.frustumCulled = false;
     trailGroup.add(trailMesh);
@@ -624,8 +643,8 @@ function updateParticles() {
         // Head position — _sceneX/_sceneZ already set by stepParticle
         headPos[i*3] = _sceneX; headPos[i*3+1] = 0.08; headPos[i*3+2] = _sceneZ;
 
-        // Trail from ring buffer — oldest to newest
-        const pb = trailPos[i], cb = trailCol[i];
+        // Trail from ring buffer — oldest to newest. Colors are static (set once at init).
+        const pb = trailPos[i];
         for (let j = 0; j < TRAIL_LEN; j++) {
             const age = j - (TRAIL_LEN - p.trailFill); // negative = not yet filled
             let x, z;
@@ -636,11 +655,9 @@ function updateParticles() {
                 x = p.trailBuf[idx * 2]; z = p.trailBuf[idx * 2 + 1];
             }
             pb[j*3] = x; pb[j*3+1] = 0.06; pb[j*3+2] = z;
-            const lum = LUM_LUT[j];
-            cb[j*3] = 0.9*lum; cb[j*3+1] = 0.07*lum*lum; cb[j*3+2] = 0.07*lum*lum;
         }
     }
-    if (trailMesh) { trailMesh.geometry.attributes.position.needsUpdate = true; trailMesh.geometry.attributes.color.needsUpdate = true; }
+    if (trailMesh) trailMesh.geometry.attributes.position.needsUpdate = true;
     if (headMesh) headMesh.geometry.attributes.position.needsUpdate = true;
 }
 
