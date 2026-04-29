@@ -532,7 +532,7 @@ let running = false;
 
 export async function run(lat, lng) {
     running = false;
-    const zoom = 12;
+    const zoom = 13;
     status(`Fetching tiles at z${zoom}…`);
     pixelData = null;
 
