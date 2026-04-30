@@ -3,6 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IOS_RENDER_INTERVAL_MS = 1000 / 40;
 
 const TILE_SIZE = 256;
 const TILE_GRID = 4;
@@ -18,16 +19,16 @@ const DY8 = [-1, -1, -1, 0, 0, 1, 1, 1];
 const FALLBACK_LOCATION = { lat: 42.33418545905304, lng: -71.0445458583231 };
 
 const DEFAULT_SETTINGS = Object.freeze({
-    particleCount: 55,
-    spawnPointCount: isMobile ? 28 : 60,
-    trailLength: 6,
-    stepsPerFrame: 2,
-    stepInterval: isMobile ? 3 : 6,
+    particleCount: isIOS ? 40 : 55,
+    spawnPointCount: isIOS ? 22 : isMobile ? 28 : 60,
+    trailLength: isIOS ? 4 : 6,
+    stepsPerFrame: isIOS ? 1 : 2,
+    stepInterval: isIOS ? 4 : isMobile ? 3 : 6,
     spawnRadius: 120,
     spawnNearCenter: false,
     lifetimeMin: 300,
     lifetimeMax: 1000,
-    loopMemory: 50,
+    loopMemory: isIOS ? 32 : 50,
     headSize: 0.5,
     headColor: '#e64f4f',
     trailRed: 0.9,
@@ -43,7 +44,7 @@ const DEFAULT_SETTINGS = Object.freeze({
     roadSpread: 5,
     roadDilation: 2,
     killTolerance: 8,
-    autoRotateSpeed: 0.3,
+    autoRotateSpeed: isIOS ? 0.22 : 0.3,
     showRoadDebug: false,
 });
 
@@ -414,7 +415,9 @@ let roadNeighborCount = 0;
 let _bestX = 0;
 let _bestY = 0;
 let rebuildTimer = null;
+let autoLoadTimer = null;
 let pendingMaskRebuild = false;
+let mapLoadInProgress = false;
 let lastRoadData = null;
 
 const roadNeighborBuffer = new Int32Array(16);
@@ -1022,6 +1025,7 @@ function scheduleRebuild(reprocessMask) {
     clearTimeout(rebuildTimer);
     rebuildTimer = setTimeout(() => {
         if (!pixelData) {
+            if (!mapLoadInProgress) autoLoadCurrentMap();
             pendingMaskRebuild = false;
             return;
         }
@@ -1037,6 +1041,16 @@ function scheduleRebuild(reprocessMask) {
     }, 180);
 }
 
+function autoLoadCurrentMap() {
+    clearTimeout(autoLoadTimer);
+    autoLoadTimer = setTimeout(() => {
+        if (pixelData || mapLoadInProgress) return;
+        const current = readLocationInputs();
+        status('Auto-loading map for current settings...');
+        run(current.lat, current.lng, current.zoom);
+    }, 160);
+}
+
 function normalizeLatLng(lat, lng) {
     return {
         lat: Math.min(85, Math.max(-85, lat)),
@@ -1050,6 +1064,7 @@ async function run(lat, lng, zoom) {
         return;
     }
     const serial = ++requestSerial;
+    mapLoadInProgress = true;
     const point = normalizeLatLng(lat, lng);
     const safeZoom = clampZoom(zoom);
     setLocationInputs(point.lat, point.lng, safeZoom);
@@ -1059,6 +1074,7 @@ async function run(lat, lng, zoom) {
     pendingMaskRebuild = false;
     status(`Fetching tiles at z${safeZoom}...`);
     resetRoadData();
+    activeMaskCtx = null;
     disposeParticleSystem();
     disposeRoadDebugMesh();
 
@@ -1091,6 +1107,8 @@ async function run(lat, lng, zoom) {
         if (serial !== requestSerial) return;
         console.warn('Tile fetch failed:', error);
         status('Tile fetch failed.');
+    } finally {
+        if (serial === requestSerial) mapLoadInProgress = false;
     }
 }
 
@@ -1132,8 +1150,11 @@ window.addEventListener('resize', () => {
     renderer.setSize(innerWidth, innerHeight);
 });
 
-(function animate() {
+let lastRenderTime = 0;
+(function animate(now = 0) {
     requestAnimationFrame(animate);
+    if (isIOS && lastRenderTime && now - lastRenderTime < IOS_RENDER_INTERVAL_MS) return;
+    lastRenderTime = now;
     frame++;
 
     if (running && pixelData && frame % settings.stepInterval === 0) {
