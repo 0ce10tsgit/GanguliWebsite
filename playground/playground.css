@@ -1,0 +1,231 @@
+.playground-page {
+    color: #f4eeee;
+}
+
+.playground-page #status {
+    display: block;
+    position: fixed;
+    left: 32px;
+    bottom: 28px;
+    z-index: 20;
+    color: #fff;
+    font-size: 13px;
+    max-width: min(520px, calc(100vw - 64px));
+    pointer-events: none;
+}
+
+#playground-top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 18px 32px;
+    pointer-events: none;
+}
+
+#playground-top .dining-btn {
+    pointer-events: auto;
+    background: transparent;
+}
+
+#playground-top h1 {
+    color: var(--accent);
+    font-size: 34px;
+    line-height: 1;
+}
+
+#playground-panel {
+    position: fixed;
+    top: 86px;
+    right: 28px;
+    bottom: 28px;
+    z-index: 20;
+    width: min(390px, calc(100vw - 32px));
+    overflow: auto;
+    padding: 16px;
+    border: 2px solid var(--accent);
+    background: rgba(7, 4, 7, 0.88);
+    backdrop-filter: blur(10px);
+    pointer-events: auto;
+}
+
+.control-section {
+    display: grid;
+    gap: 12px;
+    padding-bottom: 16px;
+    margin-bottom: 16px;
+    border-bottom: 1px solid rgba(230, 79, 79, 0.4);
+}
+
+.control-section:last-of-type {
+    border-bottom: 0;
+    margin-bottom: 0;
+}
+
+.control-section h2,
+.control-group h3 {
+    color: var(--accent);
+    font-size: 16px;
+    line-height: 1.2;
+}
+
+.location-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 78px;
+    gap: 10px;
+}
+
+.location-grid label,
+.control-row {
+    display: grid;
+    gap: 6px;
+    color: #cfc4c4;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.control-label {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 8px;
+}
+
+.control-label small {
+    color: #928888;
+    font-size: 11px;
+    font-weight: normal;
+    line-height: 1.25;
+}
+
+.location-grid input,
+.control-row input[type="number"] {
+    width: 100%;
+    min-width: 0;
+    border: 1px solid rgba(230, 79, 79, 0.7);
+    background: #050505;
+    color: #fff;
+    padding: 7px 8px;
+    font: inherit;
+}
+
+#picker-map {
+    height: 190px;
+    min-height: 190px;
+    border: 1px solid rgba(230, 79, 79, 0.7);
+    background: #050505;
+}
+
+#picker-map .leaflet-control-zoom a {
+    background: #050505;
+    border-color: rgba(230, 79, 79, 0.7);
+    color: var(--accent);
+    font-weight: bold;
+}
+
+#picker-map .leaflet-control-zoom a:hover {
+    background: var(--accent);
+    color: #000;
+}
+
+#picker-map .leaflet-control-attribution {
+    background: rgba(5, 5, 5, 0.78);
+    color: #b8abab;
+    font-size: 10px;
+}
+
+#picker-map .leaflet-control-attribution a {
+    color: var(--accent);
+}
+
+.playground-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.playground-page button.dining-btn {
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+#particle-controls {
+    display: grid;
+    gap: 16px;
+}
+
+.control-group {
+    display: grid;
+    gap: 10px;
+}
+
+.control-row-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 78px;
+    gap: 8px;
+    align-items: center;
+}
+
+.control-row input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+}
+
+.check-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.check-row input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+}
+
+#map-readout {
+    color: #aaa;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+    #playground-top {
+        padding: 12px 16px;
+    }
+
+    #playground-top h1 {
+        font-size: 24px;
+    }
+
+    #playground-panel {
+        left: 16px;
+        right: 16px;
+        top: auto;
+        bottom: 16px;
+        max-height: 58vh;
+        width: auto;
+        padding: 14px;
+    }
+
+    .location-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .location-grid label:last-child {
+        grid-column: span 2;
+    }
+
+    .playground-page #status {
+        left: 16px;
+        right: 16px;
+        bottom: calc(58vh + 28px);
+        max-width: none;
+    }
+}

@@ -67,7 +67,7 @@ body { background: #000; overflow: hidden; font-family: Arial, sans-serif; }
     padding: 8px 22px; transition: background 0.15s, color 0.15s;
 }
 .dining-btn:hover { background: var(--accent); color: #000; }
-.btn-row { display: flex; gap: 16px; }
+.btn-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; padding: 0 16px; }
 .icon-row { display: flex; gap: 24px; margin-top: 4px; }
 .icon-row a { color: #fff; transition: color 0.15s; }
 #right-panel {
