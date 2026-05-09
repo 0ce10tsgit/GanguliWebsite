@@ -124,6 +124,7 @@ document.body.appendChild(_diagDiv);
 
 export function toggleDiagnostics() {
     _diagDiv.style.display = _diagDiv.style.display === 'none' ? 'block' : 'none';
+    if (_diagDiv.style.display === 'block') showDiagnostics();
 }
 
 export function toggleRoadDebug() {
@@ -187,14 +188,15 @@ let _lastFpsTime = performance.now(), _particleMs = 0, _renderMs = 0;
     t0 = performance.now();
     renderer.render(scene, camera);
     _renderMs = performance.now() - t0;
-    showDiagnostics();
 
     if (frame % 60 === 0) {
         const now = performance.now();
         const fps = (60 / ((now - _lastFpsTime) / 1000)).toFixed(1);
         _lastFpsTime = now;
-        console.log(`FPS: ${fps} | particles: ${_particleMs.toFixed(2)}ms | render: ${_renderMs.toFixed(2)}ms`);
-        _diagDiv.textContent += `\nFPS: ${fps} | particles: ${_particleMs.toFixed(2)}ms | render: ${_renderMs.toFixed(2)}ms`;
+        if (_diagDiv.style.display !== 'none') {
+            console.log(`FPS: ${fps} | particles: ${_particleMs.toFixed(2)}ms | render: ${_renderMs.toFixed(2)}ms`);
+            _diagDiv.textContent += `\nFPS: ${fps} | particles: ${_particleMs.toFixed(2)}ms | render: ${_renderMs.toFixed(2)}ms`;
+        }
     }
 })();
 
