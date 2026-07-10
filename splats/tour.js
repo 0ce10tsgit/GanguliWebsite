@@ -77,7 +77,7 @@ const buildConfig = (renderer) => {
 
     return {
         poster: createImage(SPLAT_SOURCE.posterUrl),
-        skyboxUrl: null,
+        skyboxUrl: SPLAT_SOURCE.skyboxUrl ?? null,
         collisionUrl: null,
         contentUrl,
         contents: fetch(contentUrl),

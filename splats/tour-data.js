@@ -3,8 +3,9 @@ export const VIEWER_VERSION = '1.22.0';
 export const SPLAT_SOURCE = {
     // This SuperSplat export stays remote for now. Rendering still happens in the visitor's browser.
     // For a local export, drop it under splats/assets/ and point this at './assets/name/meta.json'.
-    contentUrl: 'https://d28zzqy0iyovbz.cloudfront.net/a444ab39/v1/meta.json',
-    posterUrl: 'https://s3-eu-west-1.amazonaws.com/images.playcanvas.com/splat/a444ab39/v1/xl.webp'
+    contentUrl: 'https://d28zzqy0iyovbz.cloudfront.net/2a57f086/v1/meta.json',
+    posterUrl: 'https://s3-eu-west-1.amazonaws.com/images.playcanvas.com/splat/2a57f086/v1/xl.webp',
+    skyboxUrl: './satara_night_4k.webp'
 };
 
 export const TOUR_STOPS = [
