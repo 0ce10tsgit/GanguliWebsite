@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CARTO_KEY } from './carto-key.php';
 
 const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -467,7 +468,7 @@ async function fetchTiles(lat, lng, zoom) {
         img.crossOrigin = 'anonymous';
         img.onload = () => resolve({ img, tx, ty });
         img.onerror = reject;
-        img.src = `https://${'abcd'[Math.floor(Math.random() * 4)]}.basemaps.cartocdn.com/dark_nolabels/${zoom}/${tx}/${ty}.png`;
+        img.src = `https://${'abcd'[Math.floor(Math.random() * 4)]}.basemaps.cartocdn.com/dark_nolabels/${zoom}/${tx}/${ty}.png?key=${encodeURIComponent(CARTO_KEY)}`;
     });
 
     const tiles = [];

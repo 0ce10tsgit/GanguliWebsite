@@ -1,4 +1,6 @@
 .claude/settings.local.json
 dining/.env
 human_inference/.env
+/.env
+playground/.env
 human_inference/.rate_limit/generate_363baea9cba210afac6d7a556fca596e30c46333.json

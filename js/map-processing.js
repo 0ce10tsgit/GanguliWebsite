@@ -9,6 +9,7 @@ import {
     VISUAL_TILE_GRID,
     isMobile,
 } from './map-config.js';
+import { CARTO_KEY } from '../carto-key.php';
 
 let pixelData = null;
 let roadMask = null;
@@ -37,7 +38,7 @@ export async function fetchTiles(lat, lng, zoom) {
     const load = (tx, ty) => new Promise((res, rej) => {
         const img = new Image(); img.crossOrigin = 'anonymous';
         img.onload = () => res({ img, tx, ty }); img.onerror = rej;
-        img.src = `https://${'abcd'[Math.floor(Math.random()*4)]}.basemaps.cartocdn.com/dark_nolabels/${zoom}/${tx}/${ty}.png`;
+        img.src = `https://${'abcd'[Math.floor(Math.random()*4)]}.basemaps.cartocdn.com/dark_nolabels/${zoom}/${tx}/${ty}.png?key=${encodeURIComponent(CARTO_KEY)}`;
     });
 
     const tiles = [];
