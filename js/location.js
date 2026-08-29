@@ -9,5 +9,9 @@ export async function fetchVisitorLocation() {
     if (!response.ok) {
         throw new Error('Location lookup failed with ' + response.status);
     }
-    return response.json();
+    const data = await response.json();
+    if (typeof data.lat !== 'number' || typeof data.lon !== 'number') {
+        throw new Error('Location lookup returned no coordinates: ' + (data.message || data.status));
+    }
+    return data;
 }
