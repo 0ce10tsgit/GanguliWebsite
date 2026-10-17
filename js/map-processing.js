@@ -115,26 +115,17 @@ function buildRoadMask() {
         const p = i * 4;
         const r = pixelData[p], g = pixelData[p+1], b = pixelData[p+2];
         const br = (r + g + b) / 3;
-        const spread = Math.max(r, g, b) - Math.min(r, g, b);
-        if (br >= 18 && br <= 34 && spread <= 5) base[i] = 1;
+        const blueTint = b - r;
+        // Carto's 2026 dark_nolabels redesign made roads a blue-grey ~(65,71,88)
+        // instead of near-black; blue tint now separates roads from flat-grey buildings.
+        if (br >= 60 && br <= 98 && blueTint >= 18 && blueTint <= 25) base[i] = 1;
     }
     rawRoadMask = base;
 
     roadMask = new Uint8Array(size);
-    const tmp = new Uint8Array(size);
     for (let py = 0; py < CANVAS_PX; py++) {
         for (let px = 0; px < CANVAS_PX; px++) {
             if (!base[py * CANVAS_PX + px]) continue;
-            tmp[py * CANVAS_PX + px] = 1;
-            for (let d = 0; d < 8; d++) {
-                const nx = px + DX8[d], ny = py + DY8[d];
-                if (nx >= 0 && ny >= 0 && nx < CANVAS_PX && ny < CANVAS_PX) tmp[ny * CANVAS_PX + nx] = 1;
-            }
-        }
-    }
-    for (let py = 0; py < CANVAS_PX; py++) {
-        for (let px = 0; px < CANVAS_PX; px++) {
-            if (!tmp[py * CANVAS_PX + px]) continue;
             roadMask[py * CANVAS_PX + px] = 1;
             for (let d = 0; d < 8; d++) {
                 const nx = px + DX8[d], ny = py + DY8[d];

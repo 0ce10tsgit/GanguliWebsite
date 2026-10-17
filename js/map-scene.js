@@ -73,7 +73,7 @@ let running = false;
 
 export async function run(lat, lng) {
     running = false;
-    const zoom = 13;
+    const zoom = 14;
     status(`Fetching tiles at z${zoom}...`);
     resetRoadData();
 

@@ -9,18 +9,45 @@ body { background: #000; overflow: hidden; font-family: Arial, sans-serif; }
     padding: 18px 32px;
     pointer-events: none;
 }
+.ui-plate {
+    display: inline-flex;
+    filter: drop-shadow(0 6px 0 rgba(0,0,0,0.45)) drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+}
+.ui-plate-btn {
+    display: inline-flex;
+    pointer-events: all;
+    filter: drop-shadow(0 6px 0 rgba(0,0,0,0.45)) drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+    transform: translateY(0);
+    transition: filter 0.12s, transform 0.12s;
+}
+.ui-plate-btn:hover {
+    filter: drop-shadow(0 2px 0 rgba(0,0,0,0.45)) drop-shadow(0 1px 3px rgba(0,0,0,0.35));
+    transform: translateY(4px);
+}
+.ui-plate-btn:active {
+    filter: drop-shadow(0 0 0 rgba(0,0,0,0.45));
+    transform: translateY(6px);
+}
 #top-bar h1 {
-    color: var(--accent); font-size: 48px; font-weight: bold;
+    color: #fff; font-size: 48px; font-weight: bold;
+    background: rgba(100, 100, 106, 0.55);
+    backdrop-filter: blur(6px);
+    clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+    padding: 4px 26px;
 }
 #top-bar #city {
-    color: var(--accent); font-size: 28px; font-weight: bold;
+    color: #fff; font-size: 28px; font-weight: bold;
+    background: rgba(100, 100, 106, 0.55);
+    backdrop-filter: blur(6px);
+    clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+    padding: 6px 26px;
 }
 #city-info-btn {
-    pointer-events: all;
     cursor: pointer;
-    background: none;
-    border: 2px solid var(--accent);
-    color: var(--accent);
+    background: rgba(100, 100, 106, 0.55);
+    backdrop-filter: blur(6px);
+    border: none;
+    color: #fff;
     border-radius: 50%;
     width: 24px;
     height: 24px;
@@ -34,8 +61,8 @@ body { background: #000; overflow: hidden; font-family: Arial, sans-serif; }
     transition: background 0.2s, color 0.2s;
 }
 #city-info-btn:hover {
-    background: var(--accent);
-    color: #000;
+    background: rgba(150, 150, 158, 0.75);
+    color: #fff;
 }
 #city-tooltip {
     display: none;
@@ -61,12 +88,38 @@ body { background: #000; overflow: hidden; font-family: Arial, sans-serif; }
     padding: 0 0 28px 0; pointer-events: all;
 }
 .dining-btn {
-    display: inline-block; color: var(--accent);
-    font-size: 18px; font-weight: bold;
-    text-decoration: none; border: 2px solid var(--accent);
-    padding: 8px 22px; transition: background 0.15s, color 0.15s;
+    position: relative;
+    display: inline-flex;
+    text-decoration: none;
+    border: none;
+    padding: 0;
+    filter: drop-shadow(0 6px 0 rgba(0,0,0,0.45)) drop-shadow(0 2px 6px rgba(0,0,0,0.3));
+    transform: translateY(0);
+    transition: filter 0.12s, transform 0.12s;
 }
-.dining-btn:hover { background: var(--accent); color: #000; }
+.dining-btn .btn-face {
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff;
+    font-size: 15px; font-weight: bold; letter-spacing: 0.03em;
+    text-transform: uppercase;
+    padding: 11px 34px;
+    background: rgba(100, 100, 106, 0.55);
+    backdrop-filter: blur(6px);
+    clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+    transition: background 0.15s, color 0.15s;
+}
+.dining-btn:hover .btn-face {
+    background: rgba(150, 150, 158, 0.75);
+    color: #fff;
+}
+.dining-btn:hover {
+    filter: drop-shadow(0 2px 0 rgba(0,0,0,0.45)) drop-shadow(0 1px 3px rgba(0,0,0,0.35));
+    transform: translateY(4px);
+}
+.dining-btn:active {
+    filter: drop-shadow(0 0 0 rgba(0,0,0,0.45));
+    transform: translateY(6px);
+}
 .btn-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; padding: 0 16px; }
 .icon-row { display: flex; gap: 24px; margin-top: 4px; }
 .icon-row a { color: #fff; transition: color 0.15s; }
@@ -77,14 +130,21 @@ body { background: #000; overflow: hidden; font-family: Arial, sans-serif; }
 }
 #right-panel img {
     width: 72px; height: 72px; border-radius: 50%;
-    object-fit: cover; border: 2px solid var(--accent);
+    object-fit: cover; border: none;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.85), 0 2px 10px rgba(0,0,0,0.35);
 }
-#right-panel .info { display: flex; flex-direction: column; gap: 4px; }
+#right-panel .info {
+    display: flex; flex-direction: column; gap: 4px;
+    background: rgba(100, 100, 106, 0.55);
+    backdrop-filter: blur(6px);
+    clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+    padding: 10px 26px;
+}
 #right-panel .name {
-    color: var(--accent); font-size: 22px; font-weight: bold;
+    color: #fff; font-size: 22px; font-weight: bold;
 }
 #right-panel .title {
-    color: #aaa; font-size: 13px;
+    color: #ddd; font-size: 13px;
 }
 @media (max-width: 600px) {
     #top-bar h1 { font-size: 32px; }

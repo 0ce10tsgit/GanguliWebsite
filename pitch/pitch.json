@@ -32,7 +32,9 @@
     "meta": "commented",
     "paragraphs": [
       "<strong>Cloud Deployment Skills</strong>",
-      "To begin with, this site is one of many applications I've developed, deployed and maintained myself. I learned cloud deployment both through this site with Digital Ocean and through my ITWS1100 class with Azure cloud deployment for a term project. I also converted my home PC to a dual boot web server that hosts AI models that I'm training and can access through my network"
+      "To begin with, this site is one of many applications I've developed, deployed and maintained myself. I learned cloud deployment both through this site with Digital Ocean and through my ITWS1100 class with Azure cloud deployment for a term project."
+      ," I also converted my home PC to a dual boot web server that hosts AI models that I'm training and can access through my network",
+      "I Have experience with Docker through my Web Development class (ITWS 2110)as well as Cloud Archecuture thru my Cloud Security Class (ITWS4961)"
     ]
   },
   {
@@ -53,7 +55,7 @@
       "<strong>Data Skills</strong>",
       "I have experience with PostgreSQL and MariaDB, both designing schemas as well as writing a lot of SQL which I learned from my ITWS1100 class and through personal projects",
        "In other Data skills I took a Biology Computational Lab where I used R on Datasets to prove/disprove a hypothesis",
-       "I've also trained AI models using Hugging Face and Python with Google Colab to create a chatbot that talks like me based on my texts"
+       "I've also trained AI models using Unsloth/QLora using AI Development tools to create a chatbot that talks like me based on my texts"
     ]
   },
   {

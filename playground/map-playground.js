@@ -23,27 +23,28 @@ const DEFAULT_SETTINGS = Object.freeze({
     particleCount: isIOS ? 40 : 55,
     spawnPointCount: isIOS ? 22 : isMobile ? 28 : 60,
     trailLength: isIOS ? 4 : 6,
-    stepsPerFrame: isIOS ? 1 : 2,
+    stepsPerFrame: 1,
     stepInterval: isIOS ? 4 : isMobile ? 3 : 6,
     spawnRadius: 120,
     spawnNearCenter: false,
     lifetimeMin: 300,
     lifetimeMax: 1000,
     loopMemory: isIOS ? 32 : 50,
-    headSize: 0.5,
-    headColor: '#e64f4f',
-    trailRed: 0.9,
-    trailGreen: 0.07,
-    trailBlue: 0.07,
+    headSize: 0.35,
+    headColor: '#cfcaec',
+    trailRed: 0.81,
+    trailGreen: 0.79,
+    trailBlue: 0.93,
     trailFalloff: 2,
     forwardBias: 1.8,
     outwardBias: 0.4,
     repeatPenalty: 2,
     randomBias: 0.4,
-    roadBrightnessMin: 18,
-    roadBrightnessMax: 34,
-    roadSpread: 5,
-    roadDilation: 2,
+    roadBrightnessMin: 60,
+    roadBrightnessMax: 98,
+    roadBlueTintMin: 25,
+    roadBlueTintMax: 18,
+    roadDilation: 1,
     killTolerance: 8,
     autoRotateSpeed: isIOS ? 0.22 : 0.3,
     showRoadDebug: false,
@@ -63,11 +64,17 @@ const LIMITS = Object.freeze({
     outwardBias: { min: -2, max: 2, step: 0.05 },
     repeatPenalty: { min: 0, max: 6, step: 0.05 },
     randomBias: { min: 0, max: 2, step: 0.05 },
-    roadBrightnessMin: { min: 0, max: 80, step: 1, integer: true },
-    roadBrightnessMax: { min: 1, max: 120, step: 1, integer: true },
-    roadSpread: { min: 0, max: 40, step: 1, integer: true },
+    roadBrightnessMin: { min: 0, max: 120, step: 1, integer: true },
+    roadBrightnessMax: { min: 1, max: 160, step: 1, integer: true },
+    roadBlueTintMin: { min: 0, max: 60, step: 1, integer: true },
+    roadBlueTintMax: { min: 0, max: 60, step: 1, integer: true },
     roadDilation: { min: 0, max: 5, step: 1, integer: true },
     killTolerance: { min: 0, max: 30, step: 1, integer: true },
+    headSize: { min: 0.05, max: 2, step: 0.01 },
+    trailRed: { min: 0, max: 1, step: 0.01 },
+    trailGreen: { min: 0, max: 1, step: 0.01 },
+    trailBlue: { min: 0, max: 1, step: 0.01 },
+    trailFalloff: { min: 0.2, max: 6, step: 0.1 },
 });
 
 const CONTROL_GROUPS = [
@@ -100,10 +107,22 @@ const CONTROL_GROUPS = [
         controls: [
             { key: 'roadBrightnessMin', label: 'Road min', help: 'darkest gray counted' },
             { key: 'roadBrightnessMax', label: 'Road max', help: 'lightest gray counted' },
-            { key: 'roadSpread', label: 'Road spread', help: 'how neutral gray must be' },
+            { key: 'roadBlueTintMin', label: 'Blue tint min', help: 'how blue vs. neutral gray (excludes buildings)' },
+            { key: 'roadBlueTintMax', label: 'Blue tint max', help: 'upper bound on blue tint' },
             { key: 'roadDilation', label: 'Dilation', help: 'thickens detected roads' },
-            { key: 'killTolerance', label: 'Kill tolerance', help: 'filters bridge artifacts' },
+            { key: 'killTolerance', label: 'Kill tolerance', help: 'bridge-artifact filter — broken, to fix' },
             { key: 'showRoadDebug', label: 'Road debug', type: 'checkbox', help: 'show detected pixels' },
+        ],
+    },
+    {
+        title: 'Appearance',
+        controls: [
+            { key: 'headColor', label: 'Head color', type: 'color' },
+            { key: 'headSize', label: 'Head size' },
+            { key: 'trailRed', label: 'Trail red' },
+            { key: 'trailGreen', label: 'Trail green' },
+            { key: 'trailBlue', label: 'Trail blue' },
+            { key: 'trailFalloff', label: 'Trail falloff', help: 'higher fades to the tail faster' },
         ],
     },
 ];
@@ -113,7 +132,8 @@ const MASK_SETTING_KEYS = new Set([
     'spawnNearCenter',
     'roadBrightnessMin',
     'roadBrightnessMax',
-    'roadSpread',
+    'roadBlueTintMin',
+    'roadBlueTintMax',
     'roadDilation',
     'killTolerance',
 ]);
@@ -560,8 +580,10 @@ function buildRoadMask() {
         const g = pixelData[p + 1];
         const b = pixelData[p + 2];
         const br = (r + g + b) / 3;
-        const spread = Math.max(r, g, b) - Math.min(r, g, b);
-        if (br >= minBrightness && br <= maxBrightness && spread <= settings.roadSpread) base[i] = 1;
+        const blueTint = b - r;
+        const minTint = Math.min(settings.roadBlueTintMin, settings.roadBlueTintMax);
+        const maxTint = Math.max(settings.roadBlueTintMin, settings.roadBlueTintMax);
+        if (br >= minBrightness && br <= maxBrightness && blueTint >= minTint && blueTint <= maxTint) base[i] = 1;
     }
 
     rawRoadMask = base;

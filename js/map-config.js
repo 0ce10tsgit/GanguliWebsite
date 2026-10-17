@@ -10,13 +10,14 @@ export const MASK_OFFSET = ((VISUAL_TILE_GRID - TILE_GRID) / 2) * TILE_SIZE;
 export const SCENE_SCALE = 0.052;
 export const GROUND_SIZE = CANVAS_PX * SCENE_SCALE;
 export const VISUAL_GROUND_SIZE = VISUAL_PX * SCENE_SCALE;
-export const ACCENT = 0xe64f4f;
+export const ACCENT = 0xcfcaec;
+export const HEAD_SIZE = 0.45;
 
 export const PARTICLE_COUNT = 55;
 export const SPAWN_POINT_COUNT = isMobile ? 28 : 60;
-export const TRAIL_LEN = 6;
+export const TRAIL_LEN = 5;
 export const STEPS_PER_FRAME = 2;
-export const STEP_INTERVAL = 4;
+export const STEP_INTERVAL = 5;
 export const SPAWN_RADIUS = 120;
 export const LIFETIME_MIN = 300;
 export const LIFETIME_MAX = 1000;

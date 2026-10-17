@@ -29,7 +29,6 @@
 
 #playground-top .dining-btn {
     pointer-events: auto;
-    background: transparent;
 }
 
 #playground-top h1 {
@@ -149,7 +148,6 @@
 }
 
 .playground-page button.dining-btn {
-    background: transparent;
     cursor: pointer;
     font-family: inherit;
 }

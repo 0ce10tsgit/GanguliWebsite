@@ -5,26 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>wierd lang IDE</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
   <style>
     :root {
-      --bg: #000;
-      --surface: #0d0d0d;
-      --surface2: #141414;
-      --border: #1e1e1e;
-      --border2: #2a2a2a;
-      --accent: #e64f4f;
-      --accent-dim: rgba(230,79,79,0.15);
+      --bg: #1e1e1e;
+      --surface: #252526;
+      --surface2: #2d2d2e;
+      --border: #3a3a3b;
+      --border2: #454547;
+      --accent: #4098e0;
+      --accent-dim: rgba(64,152,224,0.18);
       --text: #e8e8e8;
-      --muted: #555;
-      --muted2: #333;
-      --success: #4ec9b0;
-      --warning: #ce9178;
+      --muted: #9a9a9c;
+      --muted2: #6e6e70;
+      --success: #6fcf73;
+      --warning: #e0a030;
       --sidebar-w: 220px;
       --terminal-h: 220px;
       --header-h: 40px;
-      --font-ui: 'Inter', system-ui, sans-serif;
+      --radius: 0;
+      --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       --font-code: 'JetBrains Mono', monospace;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -40,26 +41,26 @@
       display: flex;
       flex-direction: column;
       background: var(--surface);
-      border-right: 1px solid var(--border);
+      box-shadow: 2px 0 8px rgba(0,0,0,0.35);
       overflow: hidden;
       transition: transform 0.25s ease;
       z-index: 50;
     }
     #sidebar-header {
       padding: 16px 14px 12px;
-      border-bottom: 1px solid var(--border);
     }
     #back-btn {
-      font-family: var(--font-code);
-      font-size: 22px;
-      color: #888;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
       text-decoration: none;
       flex-shrink: 0;
       transition: color 0.15s;
     }
     #back-btn:hover { color: var(--accent); }
     #sidebar-logo {
-      font-family: var(--font-code);
+      font-family: var(--font-ui);
       font-size: 13px;
       font-weight: 500;
       color: var(--accent);
@@ -67,34 +68,31 @@
     }
     #sidebar-tabs {
       display: flex;
-      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
     .stab {
       flex: 1;
       padding: 9px 0;
       font-family: var(--font-ui);
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 500;
       color: var(--muted);
       background: none;
       border: none;
       cursor: pointer;
       transition: color 0.15s;
     }
-    .stab.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+    .stab.active { color: var(--accent); font-weight: 600; background: var(--accent-dim); border-radius: 0; margin: 0 2px; }
     .stab:hover:not(.active) { color: var(--text); }
 
     #sidebar-content { flex: 1; overflow-y: auto; }
     #sidebar-content::-webkit-scrollbar { width: 4px; }
-    #sidebar-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+    #sidebar-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 0; }
 
     .panel { display: none; padding: 8px 0; }
     .panel.active { display: block; }
 
     /* wiki accordion */
-    .wiki-section { border-bottom: 1px solid var(--border); }
     .wiki-section summary {
       list-style: none;
       display: flex;
@@ -116,10 +114,10 @@
     .wiki-section[open] summary { color: var(--text); }
     .wiki-section summary:hover { color: var(--text); }
     .wiki-body {
-      padding: 0 14px 12px;
+      padding: 0 14px 14px;
       font-family: var(--font-ui);
       font-size: 12px;
-      color: #999;
+      color: #b5b5b5;
       line-height: 1.6;
     }
     .wiki-body code {
@@ -128,22 +126,21 @@
       color: var(--success);
       background: var(--surface2);
       padding: 1px 4px;
-      border-radius: 3px;
+      border-radius: 0;
     }
     .wiki-body pre {
       font-family: var(--font-code);
       font-size: 11px;
       background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 4px;
+      border-radius: var(--radius);
       padding: 8px 10px;
       margin-top: 6px;
       overflow-x: auto;
-      color: #ccc;
+      color: #ddd;
       line-height: 1.7;
     }
     .kw { color: var(--accent); }
-    .val { color: #9cdcfe; }
+    .val { color: #4fd68c; }
     .cmt { color: var(--muted); }
 
     /* examples list */
@@ -151,13 +148,15 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      width: 100%;
-      padding: 9px 14px;
+      width: calc(100% - 8px);
+      margin: 0 4px;
+      padding: 9px 10px;
       font-family: var(--font-ui);
       font-size: 12px;
       color: var(--muted);
       background: none;
       border: none;
+      border-radius: 0;
       cursor: pointer;
       text-align: left;
       transition: color 0.15s, background 0.15s;
@@ -168,25 +167,21 @@
 
     #sidebar-footer {
       padding: 12px;
-      border-top: 1px solid var(--border);
     }
     #run-sidebar {
       width: 100%;
-      padding: 9px;
+      padding: 8px;
       background: transparent;
-      color: var(--accent);
+      color: var(--text);
       font-family: var(--font-ui);
       font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      border: 1px solid var(--accent);
-      border-radius: 0;
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius);
       cursor: pointer;
-      transition: background 0.15s, color 0.15s;
+      transition: background 0.15s;
     }
-    #run-sidebar:hover { background: var(--accent); color: #fff; }
-    #run-sidebar:hover { opacity: 0.85; }
+    #run-sidebar:hover { background: var(--surface2); }
     #run-sidebar:disabled { opacity: 0.35; cursor: not-allowed; }
 
     /* ── MAIN ── */
@@ -199,7 +194,7 @@
       justify-content: space-between;
       padding: 0 14px;
       background: var(--surface);
-      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
       flex-shrink: 0;
     }
     #tab-bar { display: flex; align-items: center; gap: 0; }
@@ -209,17 +204,17 @@
       gap: 8px;
       padding: 0 14px;
       height: var(--header-h);
-      font-family: var(--font-code);
+      font-family: var(--font-ui);
       font-size: 12px;
       color: var(--text);
-      border-top: 2px solid var(--accent);
       background: var(--bg);
+      border-radius: 0;
     }
     #status-bar {
       display: flex;
       align-items: center;
       gap: 12px;
-      font-family: var(--font-code);
+      font-family: var(--font-ui);
       font-size: 11px;
       color: var(--muted);
     }
@@ -234,33 +229,30 @@
       display: flex;
       flex-direction: column;
       background: var(--bg);
-      border-top: 1px solid var(--border);
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.3);
     }
     #terminal-tabs {
       display: flex;
       align-items: center;
       gap: 0;
       padding: 0 4px;
-      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.25);
       flex-shrink: 0;
     }
     .ttab {
       padding: 6px 14px;
       font-family: var(--font-ui);
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
       color: var(--muted);
       background: none;
       border: none;
-      border-bottom: 2px solid transparent;
       cursor: pointer;
       transition: color 0.15s;
       margin-bottom: -1px;
     }
-    .ttab.active { color: var(--text); border-bottom-color: var(--accent); }
-    .ttab:hover:not(.active) { color: #888; }
+    .ttab.active { color: var(--text); font-weight: 600; background: var(--accent-dim); border-radius: 0; }
+    .ttab:hover:not(.active) { color: var(--text); }
 
     #terminal-output {
       flex: 1;
@@ -275,11 +267,11 @@
 
     .t-prompt { color: var(--accent); }
     .t-info    { color: var(--muted); }
-    .t-out     { color: #c8e6c9; }
-    .t-err     { color: #f48771; }
+    .t-out     { color: var(--success); }
+    .t-err     { color: #ff6b6b; }
     .t-unknown { color: var(--warning); }
-    .t-input   { color: #9cdcfe; }
-    .t-warn    { color: #e5a50a; }
+    .t-input   { color: #5fb0ff; }
+    .t-warn    { color: var(--warning); }
     .t-cursor  { display: inline-block; width: 8px; height: 14px; background: var(--accent); vertical-align: middle; animation: blink 1s step-end infinite; }
     @keyframes blink { 50% { opacity: 0; } }
 
@@ -292,21 +284,20 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 10px 18px;
-      background: transparent;
-      color: var(--accent);
+      padding: 9px 20px;
+      background: var(--accent);
+      color: #fff;
       font-family: var(--font-ui);
       font-size: 12px;
       font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      border: 1px solid var(--accent);
-      border-radius: 0;
+      border: none;
+      border-radius: var(--radius);
       cursor: pointer;
-      transition: background 0.15s, color 0.15s;
+      transition: filter 0.15s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     }
-    #about-btn:hover { background: var(--accent); color: #fff; }
-    #about-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    #about-btn:hover { filter: brightness(1.1); }
+    #about-btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; box-shadow: none; }
 
     /* ── HAMBURGER ── */
     #hamburger {
@@ -318,19 +309,20 @@
       width: 36px;
       height: 36px;
       background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 6px;
+      border: none;
+      border-radius: var(--radius);
       color: var(--text);
       font-size: 16px;
       cursor: pointer;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.3);
     }
     #overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0,0,0,0.4);
       z-index: 49;
     }
     #overlay.show { display: block; }
@@ -343,18 +335,18 @@
       z-index: 300;
       align-items: center;
       justify-content: center;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.45);
     }
     #about-modal.show { display: flex; }
     #about-card {
-      background: rgba(14,14,14,0.97);
-      border: 1px solid var(--accent);
+      background: #2c2c2d;
       border-radius: 0;
       width: min(820px, 90vw);
       max-height: 80vh;
       overflow-y: auto;
       padding: 32px 36px;
       animation: popIn 0.2s ease;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
     }
     @keyframes popIn {
       from { opacity: 0; transform: scale(0.96) translateY(8px); }
@@ -369,7 +361,7 @@
       margin-bottom: 24px;
     }
     #about-title {
-      font-family: var(--font-code);
+      font-family: var(--font-ui);
       font-size: 14px;
       font-weight: 500;
       color: var(--accent);
@@ -378,7 +370,7 @@
     }
     #about-close {
       background: none;
-      border: 1px solid var(--border2);
+      border: none;
       color: var(--muted);
       font-size: 16px;
       width: 28px;
@@ -388,13 +380,13 @@
       justify-content: center;
       cursor: pointer;
       border-radius: 0;
-      transition: border-color 0.15s, color 0.15s;
+      transition: background 0.15s, color 0.15s;
     }
-    #about-close:hover { border-color: var(--accent); color: var(--accent); }
+    #about-close:hover { background: var(--surface2); color: var(--accent); }
     #about-body p {
       font-family: var(--font-ui);
       font-size: 14px;
-      color: #999;
+      color: #bbb;
       line-height: 1.8;
       margin-bottom: 16px;
     }
@@ -408,7 +400,7 @@
       cursor: col-resize;
       z-index: 60;
     }
-    #sidebar-resize:hover, #sidebar-resize.dragging { background: var(--accent); opacity: 0.5; }
+    #sidebar-resize:hover, #sidebar-resize.dragging { background: var(--accent); opacity: 0.4; }
 
     /* ── MOBILE ── */
     @media (max-width: 768px) {
@@ -437,7 +429,12 @@
     <div id="sidebar-resize"></div>
     <div id="sidebar-header">
       <div style="display:flex;align-items:center;gap:10px;">
-        <a href="../" id="back-btn" title="Back">←</a>
+        <a href="../" id="back-btn" title="Back">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 5 5 12 12 19"></polyline>
+          </svg>
+        </a>
         <div id="sidebar-logo">WIERD LANG</div>
       </div>
     </div>
@@ -683,7 +680,7 @@
     </div><!-- /sidebar-content -->
 
     <div id="sidebar-footer">
-      <button id="run-sidebar">ABOUT</button>
+      <button id="run-sidebar">About</button>
     </div>
   </aside>
 
@@ -702,7 +699,7 @@
 
     <div id="terminal-panel">
       <div id="terminal-tabs">
-        <button class="ttab active">TERMINAL</button>
+        <button class="ttab active">Terminal</button>
       </div>
       <div id="terminal-output">
         <span class="t-prompt">></span> <span class="t-info">wierd lang loaded successfully</span><br>
@@ -712,7 +709,7 @@
   </main>
 </div>
 
-<button id="about-btn" disabled>▶ RUN</button>
+<button id="about-btn" disabled>Run</button>
 
 <div id="about-modal">
   <div id="about-card">
@@ -815,33 +812,33 @@ call square 12`,
 
 // ── CODEMIRROR THEME ──────────────────────────────────────────────────────
 const sealTheme = EditorView.theme({
-  "&": { backgroundColor: "#000", color: "#d4d4d4", height: "100%" },
+  "&": { backgroundColor: "#1e1e1e", color: "#e8e8e8", height: "100%" },
   ".cm-content": {
     fontFamily: "'JetBrains Mono', monospace",
     fontSize: "13px",
     lineHeight: "1.7",
     padding: "8px 0",
-    caretColor: "#e64f4f",
+    caretColor: "#4098e0",
   },
-  ".cm-cursor": { borderLeftColor: "#e64f4f !important", borderLeftWidth: "2px" },
-  ".cm-selectionBackground": { backgroundColor: "rgba(230,79,79,0.2) !important" },
-  "::selection": { backgroundColor: "rgba(230,79,79,0.2)" },
+  ".cm-cursor": { borderLeftColor: "#4098e0 !important", borderLeftWidth: "2px" },
+  ".cm-selectionBackground": { backgroundColor: "rgba(64,152,224,0.25) !important" },
+  "::selection": { backgroundColor: "rgba(64,152,224,0.25)" },
   ".cm-gutters": {
-    backgroundColor: "#080808",
-    color: "#3a3a3a",
+    backgroundColor: "#1a1a1a",
+    color: "#6e6e70",
     border: "none",
-    borderRight: "1px solid #1a1a1a",
+    boxShadow: "1px 0 4px rgba(0,0,0,0.3)",
   },
   ".cm-lineNumbers .cm-gutterElement": {
     fontFamily: "'JetBrains Mono', monospace",
     fontSize: "11px",
     padding: "0 10px 0 6px",
   },
-  ".cm-activeLine": { backgroundColor: "rgba(255,255,255,0.03)" },
-  ".cm-activeLineGutter": { backgroundColor: "rgba(255,255,255,0.02)" },
+  ".cm-activeLine": { backgroundColor: "rgba(255,255,255,0.04)" },
+  ".cm-activeLineGutter": { backgroundColor: "rgba(255,255,255,0.025)" },
   ".cm-foldGutter": { display: "none" },
-  ".cm-matchingBracket": { backgroundColor: "rgba(230,79,79,0.25)", outline: "none" },
-}, { dark: true });
+  ".cm-matchingBracket": { backgroundColor: "rgba(64,152,224,0.25)", outline: "none" },
+}, { dark: false });
 
 // ── EDITOR SETUP ──────────────────────────────────────────────────────────
 const posEl = document.getElementById('cursor-pos');

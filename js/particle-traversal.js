@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {
     ACCENT,
     CANVAS_PX,
+    HEAD_SIZE,
     LIFETIME_MAX,
     LIFETIME_MIN,
     LOOP_MEMORY,
@@ -166,9 +167,9 @@ function initParticleSystem() {
         const colSub = allCol.subarray(i * TRAIL_LEN * 3, (i+1) * TRAIL_LEN * 3);
         for (let j = 0; j < TRAIL_LEN; j++) {
             const lum = LUM_LUT[j];
-            colSub[j*3] = 0.9*lum;
-            colSub[j*3 + 1] = 0.07*lum*lum;
-            colSub[j*3 + 2] = 0.07*lum*lum;
+            colSub[j*3] = 0.81*lum;
+            colSub[j*3 + 1] = 0.79*lum;
+            colSub[j*3 + 2] = 0.93*lum;
         }
         trailPos.push(posSub);
         trailCol.push(colSub);
@@ -201,7 +202,7 @@ function initParticleSystem() {
     headPosAttr.setUsage(THREE.DynamicDrawUsage);
     hGeo.setAttribute('position', headPosAttr);
     headMesh = new THREE.Points(hGeo, new THREE.PointsMaterial({
-        color: ACCENT, size: 0.5, sizeAttenuation: true, fog: false,
+        color: ACCENT, size: HEAD_SIZE, sizeAttenuation: true, fog: false,
     }));
     headMesh.frustumCulled = false;
     sceneRef.add(headMesh);
