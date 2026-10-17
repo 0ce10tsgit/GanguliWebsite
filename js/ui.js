@@ -19,7 +19,8 @@ debugToggle.addEventListener('click', toggleDiagnostics);
 roadDebugToggle.addEventListener('click', toggleRoadDebug);
 
 fetchVisitorLocation()
-    .then(({ lat, lon }) => {
+    .then(({ lat, lon, city, regionName, country }) => {
+        cityLabel.textContent = [city, regionName || country].filter(Boolean).join(', ') || FALLBACK_LOCATION.label;
         run(lat, lon);
     })
     .catch(() => {
